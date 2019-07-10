@@ -1,5 +1,11 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+Sample eventlog in file called eventlog_sample
+
+visualization should use some of those events to be pretty like chrome devtools. think I logged most of the stuff we'll need now, but might have to add more. there are some values that aren't working yet like in the dhtQueryRunner, but we can just not include those for now.
+
+eventually visualization can be real time connected to the eventstream
+
 ## Available Scripts
 
 In the project directory, you can run:
