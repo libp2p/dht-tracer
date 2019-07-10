@@ -5,6 +5,7 @@ import './App.css'
 let fileReader
 
 const handleFileRead = (e) => {
+  // TODO: reject random files
   const content = fileReader.result
   const array = content.split('\n')
   const formattedArray = array.map((event) => {
