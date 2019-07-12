@@ -51,20 +51,21 @@ class App extends Component {
         (event) => event.Operation === 'dhtQueryRunnerStart',
       ),
     )
-    this.setState({ queryId: queryStart[0].query, queryStart })
-    this.filterData()
+    const queryId = queryStart[0].query
+    this.setState({ queryId, queryStart })
+    this.filterData(queryId)
   }
 
   changeQueryFilter(queryId) {
+    console.log('change to', queryId)
     if (queryId === this.state.queryId) {
       return
     }
     this.setState({ queryId })
-    this.filterData()
+    this.filterData(queryId)
   }
 
-  filterData() {
-    const { queryId } = this.state
+  filterData(queryId) {
     console.log('query id is', queryId)
     const queryArray = this.parseLogs(
       this.formattedArray.filter((event) => event.Operation === 'queryPeer!'),
