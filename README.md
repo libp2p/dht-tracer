@@ -1,6 +1,6 @@
 Sample eventlogs in files called eventlog_sample...
 
-Eventlogs output using tracer-more-logs branch of https://github.com/mplaza/go-libp2p-kad-dht
+Eventlogs output using `tracer-more-logs` branch of https://github.com/mplaza/go-libp2p-kad-dht
 
 #### Running
 
@@ -13,7 +13,7 @@ yarn
 Start the app
 
 ```
-yarn run
+yarn start
 ```
 
 #### Doin Stuff
