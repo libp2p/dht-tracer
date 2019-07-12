@@ -13,7 +13,7 @@ yarn
 Start the app
 
 ```
-yarn run
+yarn start
 ```
 
 #### Doin Stuff
