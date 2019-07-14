@@ -1,7 +1,9 @@
 import React, { Component } from 'react'
-import { Chart } from 'react-google-charts'
+//import { Chart } from 'react-google-charts'
+import { Chart } from './Chart'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheckCircle } from '@fortawesome/free-solid-svg-icons'
+import { DateTime } from 'luxon'
 import './App.css'
 
 let fileReader
@@ -66,12 +68,15 @@ class App extends Component {
   filterData() {
     const { queryId } = this.state
     console.log('query id is', queryId)
+
     const queryArray = this.parseLogs(
       this.formattedArray.filter((event) => event.Operation === 'queryPeer!'),
     ).filter((event) => event.query === queryId)
+
     const dialArray = this.parseLogs(
       this.formattedArray.filter((event) => event.Operation === 'dialPeer!'),
     ).filter((event) => event.query === queryId)
+
     const queryRunnerArray = this.parseLogs(
       this.formattedArray.filter(
         (event) => event.Operation === 'dhtQueryRunner',
@@ -83,61 +88,100 @@ class App extends Component {
     })
     const queryRunner = queryRunnerArray[0]
     console.log('queryRunnerArray is', queryRunnerArray)
-    const data = [
-      [
-        { type: 'string', id: 'Peer' },
-        { type: 'string', id: 'Operation' },
-        { type: 'date', id: 'Start' },
-        { type: 'date', id: 'End' },
-      ],
-    ]
-    if (queryRunner) {
-      data.push([
-        'Query',
-        `Seen: ${queryRunner.PeersSeen.length}, Queried: ${
-          queryRunner.PeersQueried.length
-        }, ${(queryRunner.Duration / 1000000000).toFixed(2)}s`,
-        new Date(queryRunner.StartTime),
-        new Date(queryRunner.EndTime),
-      ])
+
+    let dateStart = null
+    let dateEnd = null
+
+    const formatDate = date => {
+      //return new Date(date)
+      //const dateTime = DateTime.fromJSDate(new Date(date))
+      console.log(typeof date, date)
+      const dateTime = typeof date === 'string' ? DateTime.fromISO(date) : DateTime.fromMillis(date)
+      //const dateTime = new Date(date)
+      if (!dateStart || date < dateStart) dateStart = dateTime
+      if (!dateEnd || date < dateEnd) dateEnd = dateTime
+
+      return dateTime
     }
+
+    const data = {
+      queries: [],
+      start: null,
+      end: null
+    }
+
+    if (!queryRunner) {
+      return
+    }
+
+    const query = {
+      id: queryId,
+      seen: queryRunner.PeersSeen.length,
+      queried: queryRunner.PeersQueried.length,
+      duration: (queryRunner.Duration / 1000000000).toFixed(2),
+      start: formatDate(queryRunner.StartTime),
+      end: formatDate(queryRunner.EndTime),
+      peers: []
+    }
+
     const peersQueried = {}
-    for (let i = 0; i < queryArray.length; i++) {
-      const peerQuery = queryArray[i]
-      // @todo: make duplicated more clear
+    const findAndAddPeerAction = (peer, peerData) => {
+      let foundPeer = query.peers.find(p => p.id === peer.peer)
+      if (!foundPeer) {
+        foundPeer = {
+          id: peer.peer,
+          actions: []
+        }
+        query.peers.push(foundPeer)
+      }
+
+      ['dup', 'queryId', 'queryTotal'].forEach(key => {
+        if (!peerData[key]) return
+        foundPeer[key] = peerData[key]
+      })
+
+      foundPeer.actions.push({
+        type: peerData.type,
+        start: peerData.start,
+        end: peerData.end
+      })
+    }
+
+    for (const peer of queryArray) {
+      findAndAddPeerAction(peer, {
+        type: 'query',
+        queryId: peer.filteredPeers,
+        queryTotal: peer.closerPeers,
+        start: formatDate(peer.Start),
+        end: formatDate(
+          new Date(peer.Start).getTime() + peer.Duration / 1000000,
+        )
+      })
+    }
+
+    for (const peer of dialArray) {
       let duplicate = false
-      if (peersQueried[peerQuery.peer]) {
+      if (peersQueried[peer.peer]) {
         duplicate = true
       }
-      peersQueried[peerQuery.peer] = true
-      const dataToGraph = [
-        `Peer ${peerQuery.peer}`,
-        `${duplicate ? 'DUPLICATE' : 'Query'} ${peerQuery.filteredPeers} / ${
-          peerQuery.closerPeers
-        }`,
-        new Date(peerQuery.Start),
-        new Date(
-          new Date(peerQuery.Start).getTime() + peerQuery.Duration / 1000000,
-        ),
-      ]
-      data.push(dataToGraph)
+      peersQueried[peer.peer] = true
+
+      findAndAddPeerAction(peer, {
+        type: 'dial',
+        dup: duplicate,
+        start: formatDate(peer.Start),
+        end: formatDate(
+          new Date(peer.Start).getTime() + peer.Duration / 1000000,
+        )
+      })
     }
 
-    for (let i = 0; i < dialArray.length; i++) {
-      const peerQuery = dialArray[i]
-      const dataToGraph = [
-        `Peer ${peerQuery.peer}`,
-        'Dial',
-        new Date(peerQuery.Start),
-        new Date(
-          new Date(peerQuery.Start).getTime() + peerQuery.Duration / 1000000,
-        ),
-      ]
-      data.push(dataToGraph)
-    }
+    data.start = dateStart
+    data.end = dateEnd
+    data.queries.push(query)
 
     this.setState({
-      data: data,
+      data: data
     })
   }
 
@@ -146,8 +190,9 @@ class App extends Component {
     fileReader.onloadend = this.handleFileRead
     fileReader.readAsText(file)
   }
+
   render() {
-    const { data, queryStart, queryId } = this.state
+    const { data, queryStart, queryId, dateStart, dateEnd } = this.state
     console.log('data is', data)
 
     return (
@@ -205,4 +250,5 @@ class App extends Component {
     )
   }
 }
+
 export default App

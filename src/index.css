@@ -5,9 +5,46 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #141b1f;
+  color: #dde5ec;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+  monospace;
+}
+
+.chartRow {
+  background: #0d1316;
+  border-bottom: 1px solid #444444;
+  padding: 5px 8px;
+}
+
+.chartLabel {
+  display: inline-block;
+  margin-right: 12px;
+}
+
+.chartBar {
+  display: inline-block;
+}
+
+
+
+.chartBarTypedial {
+  background: #f5e06b;
+}
+
+.chartBarTypequery {
+  background: #59cebc;
+}
+
+.chartBar:first-child {
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+
+.chartBar:last-child {
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
 }
