@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import ReactTooltip from 'react-tooltip'
 import { DateTime } from './DateTime'
 
 class Chart extends Component {
@@ -17,6 +18,7 @@ class Chart extends Component {
 
     return (
       <div className="chart">
+        <ReactTooltip />
         <DateTime date={start} />
         <DateTime date={end} />
         {queries.map((query, key) => (
@@ -65,23 +67,22 @@ class Peer extends Component {
   render() {
     const { peer, data, windowWidth } = this.props
     const { id } = peer
-    const label = `Peer ${id.substr(0, 6).toUpperCase()}`
+    const label = `Peer ${id.toUpperCase()}`
 
     return (
       <div className="chartRow">
         <div className="chartLabel">{label}</div>
-        <div className="chartLabel">xor</div>
-        <div className="chartLabel">hops</div>
-        <div className="chartBars">
+        <div className="chartMiniColumn">xor</div>
+        <div className="chartMiniColumn">hops</div>
+        <div className="chartBars" style={{ width: windowWidth }}>
           {peer.actions.map((action, key) => (
             <div
               key={key}
               className={`chartBar chartBarType${action.type} ${key > 0 &&
                 'additionalBar'}`}
               style={this.actionBarStyle(action, data, windowWidth)}
-            >
-              {action.type}
-            </div>
+              data-tip={`${action.type} duration: ${action.duration}s`}
+            />
           ))}
         </div>
       </div>
@@ -94,10 +95,6 @@ const calculatePosByDates = (min, max, start, end, windowWidth) => {
   const a = Math.floor((start - min) * scale)
   const b = Math.ceil((max - end) * scale)
   const c = Math.ceil((end - start) * scale)
-  console.log('scale is', scale)
-
-  // console.log(min, max, start, end)
-  // console.log('A', a, 'B', b, 'C', c)
 
   return {
     startPos: a,

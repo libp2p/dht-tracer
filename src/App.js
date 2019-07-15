@@ -7,7 +7,7 @@ import { DateTime } from 'luxon'
 import './App.css'
 
 let fileReader
-var windowWidth = window.innerWidth - 20
+const windowWidth = window.innerWidth - 300
 
 class App extends Component {
   state = {
@@ -139,7 +139,7 @@ class App extends Component {
         query.peers.push(foundPeer)
       }
 
-      ;['dup', 'queryId', 'queryTotal'].forEach((key) => {
+      ;['dup', 'filteredPeersNum', 'closerPeersNum'].forEach((key) => {
         if (!peerData[key]) return
         foundPeer[key] = peerData[key]
       })
@@ -148,14 +148,16 @@ class App extends Component {
         type: peerData.type,
         start: peerData.start,
         end: peerData.end,
+        duration: peerData.duration,
       })
     }
 
     for (const peer of queryArray) {
       findAndAddPeerAction(peer, {
         type: 'query',
-        queryId: peer.filteredPeers,
-        queryTotal: peer.closerPeers,
+        filteredPeersNum: peer.filteredPeers,
+        closerPeersNum: peer.closerPeers,
+        duration: (peer.Duration / 1000000).toFixed(2),
         start: formatDate(peer.Start),
         end: formatDate(
           new Date(peer.Start).getTime() + peer.Duration / 1000000,
@@ -173,6 +175,7 @@ class App extends Component {
       findAndAddPeerAction(peer, {
         type: 'dial',
         dup: duplicate,
+        duration: (peer.Duration / 1000000).toFixed(2),
         start: formatDate(peer.Start),
         end: formatDate(
           new Date(peer.Start).getTime() + peer.Duration / 1000000,

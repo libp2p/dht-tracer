@@ -22,12 +22,34 @@ code {
 
 .chartLabel {
   display: inline-block;
-  margin-right: 12px;
+  width: 100px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  line-height: 50px;
 }
 
-.chartBar {
+.chartMiniColumn {
   display: inline-block;
-  height: 25px;
+  width: 50px;
+  line-height: 50px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: center;
+}
+
+.chartBars {
+  display: inline-block;
+  height: 50px;
+}
+
+.chartBars .chartBar {
+  display: inline-block;
+  height: 20px;
+  line-height: 20px;
+  position: relative;
+  top: 14px;
 }
 
 .chartBarTypedial {
@@ -38,9 +60,9 @@ code {
   background: #59cebc;
 }
 
-.additionalBar {
+.chartBars .chartBar.additionalBar {
   position: relative;
-  top: -25px;
+  top: -13px;
 }
 
 .chartBar:last-child {
