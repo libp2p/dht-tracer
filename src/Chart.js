@@ -2,8 +2,11 @@ import React, { Component } from 'react'
 import ReactTooltip from 'react-tooltip'
 import { DateTime } from './DateTime'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTimes } from '@fortawesome/free-solid-svg-icons'
-import { faCheck } from '@fortawesome/free-solid-svg-icons'
+import {
+  faTimes,
+  faExclamationTriangle,
+  faCheck,
+} from '@fortawesome/free-solid-svg-icons'
 
 class Chart extends Component {
   // state = {
@@ -76,7 +79,15 @@ class Peer extends Component {
     return (
       <div className="chartRow">
         <div className="chartLabel">{label}</div>
-        <div className="chartMiniColumn">xor</div>
+        <div className="chartMiniColumn">
+          {peer.dup && (
+            <FontAwesomeIcon
+              icon={faExclamationTriangle}
+              style={{ color: '#F4E04D' }}
+            />
+          )}
+        </div>
+        <div className="chartMiniColumn">{peer.xor}</div>
         <div className="chartMiniColumn">hops</div>
         <div className="chartBars" style={{ width: windowWidth }}>
           {peer.actions.map((action, key) => (
@@ -84,13 +95,13 @@ class Peer extends Component {
               key={key}
               className={`chartBar chartBarType${action.type}`}
               style={this.actionBarStyle(action, data, windowWidth)}
-              data-tip={`${action.type} duration: ${action.duration}s`}
+              data-tip={`${action.type} duration: ${action.duration}ms`}
             >
-              {action.success === 'failure' && (
-                <FontAwesomeIcon icon={faTimes} style={{ color: '#C74D6E' }} />
+              {action.type === 'dial' && !action.success && (
+                <FontAwesomeIcon icon={faTimes} style={{ color: '#AB2346' }} />
               )}
-              {action.success === 'true' && (
-                <FontAwesomeIcon icon={faCheck} style={{ color: '#7DC24B' }} />
+              {action.type === 'query' && action.success && (
+                <FontAwesomeIcon icon={faCheck} style={{ color: '#00B295' }} />
               )}
             </div>
           ))}

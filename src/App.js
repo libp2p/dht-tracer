@@ -17,25 +17,25 @@ class App extends Component {
   }
   formattedArray = []
 
-  parseLogs(array) {
-    return array.map((event) => {
-      const logs = event.Logs.map((log) => {
-        return log.Fields[0]
-      })
-      for (let i = 0; i < logs.length; i++) {
-        const log = logs[i]
-        if (log.Key === 'PeersQueried' || log.Key === 'PeersSeen') {
-          const peerString = log.Value.slice(1, -1)
-          const peerArr = peerString.split(' ')
-          event[log.Key] = peerArr
-        } else {
-          event[log.Key] = log.Value
-        }
-      }
+  // parseLogs(array) {
+  //   return array.map((event) => {
+  //     const logs = event.Logs.map((log) => {
+  //       return log.Fields[0]
+  //     })
+  //     for (let i = 0; i < logs.length; i++) {
+  //       const log = logs[i]
+  //       if (log.Key === 'PeersQueried' || log.Key === 'PeersSeen') {
+  //         const peerString = log.Value.slice(1, -1)
+  //         const peerArr = peerString.split(' ')
+  //         event[log.Key] = peerArr
+  //       } else {
+  //         event[log.Key] = log.Value
+  //       }
+  //     }
 
-      return event
-    })
-  }
+  //     return event
+  //   })
+  // }
 
   handleFileRead = (e) => {
     // TODO: reject random files
@@ -49,12 +49,11 @@ class App extends Component {
       }
     })
 
-    const queryStart = this.parseLogs(
-      this.formattedArray.filter(
-        (event) => event.Operation === 'dhtQueryRunnerStart',
-      ),
+    const queryStart = this.formattedArray.filter(
+      (event) => event.event === 'dhtQueryRunner.Run.Start',
     )
-    const queryId = queryStart[0].query
+
+    const queryId = queryStart[0].QueryRunner.Query.Key
     this.setState({ queryId, queryStart })
     this.filterData(queryId)
   }
@@ -68,43 +67,148 @@ class App extends Component {
     this.filterData(queryId)
   }
 
+  findEventsForTypeAndQuery(type, queryId) {
+    return this.formattedArray
+      .filter((event) => event.event === type)
+      .filter((event) => event.QueryRunner.Query.Key === queryId)
+  }
+
+  combineQueryActions(queryId) {
+    const peerQueries = {}
+
+    const queryStartArray = this.findEventsForTypeAndQuery(
+      'dhtQueryRunner.queryPeer.Start',
+      queryId,
+    )
+
+    const queryEndArray = this.findEventsForTypeAndQuery(
+      'dhtQueryRunner.queryPeer.End',
+      queryId,
+    )
+
+    const queryResultArray = this.findEventsForTypeAndQuery(
+      // @todo: update this for new name
+      'queryPeer.Result',
+      queryId,
+    )
+
+    // combine these events to get the 'query' action
+    for (const peerQuery of queryStartArray) {
+      peerQueries[peerQuery.peerID] = {}
+      peerQueries[peerQuery.peerID].start = peerQuery.time
+      peerQueries[peerQuery.peerID].xor = peerQuery.XOR
+    }
+
+    // if there is no start event ignore these (probably came in from an interrupted log and no way to calc duration)
+    for (const peerQuery of queryEndArray) {
+      if (peerQueries[peerQuery.peerID]) {
+        peerQueries[peerQuery.peerID].end = peerQuery.time
+      }
+    }
+
+    for (const peerQuery of queryResultArray) {
+      if (peerQueries[peerQuery.peerID]) {
+        peerQueries[peerQuery.peerID].success = peerQuery.success
+        peerQueries[peerQuery.peerID].filteredPeers = peerQuery.filteredPeers
+        peerQueries[peerQuery.peerID].closerPeers = peerQuery.closerPeers
+      }
+    }
+
+    return peerQueries
+  }
+
+  combineDialActions(queryId) {
+    const peerDials = {}
+    const dialStartArray = this.findEventsForTypeAndQuery(
+      'dhtQueryRunner.dialPeer.Dialing',
+      queryId,
+    )
+
+    const dialFailureArray = this.findEventsForTypeAndQuery(
+      'dhtQueryRunner.dialPeer.DialFailure',
+      queryId,
+    )
+
+    const dialSuccessArray = this.findEventsForTypeAndQuery(
+      'dhtQueryRunner.dialPeer.DialSuccess',
+      queryId,
+    )
+
+    const alreadyConnectedArray = this.findEventsForTypeAndQuery(
+      'dhtQueryRunner.dialPeer.AlreadyConnected',
+      queryId,
+    )
+
+    for (const peerDial of dialStartArray) {
+      if (peerDials[peerDial.peerID]) {
+        peerDials[peerDial.peerID].duplicate = true
+      } else {
+        peerDials[peerDial.peerID] = {}
+      }
+      peerDials[peerDial.peerID].start = peerDial.time
+      peerDials[peerDial.peerID].xor = peerDial.XOR
+    }
+
+    for (const peerDial of dialFailureArray) {
+      if (peerDials[peerDial.peerID]) {
+        peerDials[peerDial.peerID].end = peerDial.time
+        peerDials[peerDial.peerID].success = false
+      }
+    }
+
+    for (const peerDial of dialSuccessArray) {
+      if (peerDials[peerDial.peerID]) {
+        peerDials[peerDial.peerID].end = peerDial.time
+        peerDials[peerDial.peerID].success = true
+      }
+    }
+
+    for (const peerDial of alreadyConnectedArray) {
+      if (peerDials[peerDial.peerID]) {
+        peerDials[peerDial.peerID].duplicate = true
+      } else {
+        peerDials[peerDial.peerID] = {}
+      }
+      peerDials[peerDial.peerID].start = peerDial.time
+      peerDials[peerDial.peerID].end = peerDial.time
+      peerDials[peerDial.peerID].alreadyConnected = true
+      peerDials[peerDial.peerID].success = true
+      peerDials[peerDial.peerID].xor = peerDial.XOR
+    }
+
+    return peerDials
+  }
+
   filterData(queryId) {
-    console.log('query id is', queryId)
+    const peerQueriesObject = this.combineQueryActions(queryId)
+    const peerDialsObject = this.combineDialActions(queryId)
 
-    const queryArray = this.parseLogs(
-      this.formattedArray.filter((event) => event.Operation === 'queryPeer!'),
-    ).filter((event) => event.query === queryId)
-
-    const dialArray = this.parseLogs(
-      this.formattedArray.filter((event) => event.Operation === 'dialPeer!'),
-    ).filter((event) => event.query === queryId)
-
-    const queryRunnerArray = this.parseLogs(
-      this.formattedArray.filter(
-        (event) => event.Operation === 'dhtQueryRunner',
-      ),
-    ).filter((event) => {
-      const queryKeyRegex = new RegExp(queryId, 'g')
-
-      return event.Query.match(queryKeyRegex)
-    })
-    const queryRunner = queryRunnerArray[0]
-    console.log('queryRunnerArray is', queryRunnerArray)
+    const queryRunnerRunStart = this.findEventsForTypeAndQuery(
+      'dhtQueryRunner.Run.Start',
+      queryId,
+    )[0]
+    const queryRunnerRunEnd = this.findEventsForTypeAndQuery(
+      'dhtQueryRunner.Run.End',
+      queryId,
+    )[0]
 
     let dateStart = null
     let dateEnd = null
 
     const formatDate = (date) => {
-      //return new Date(date)
-      //const dateTime = DateTime.fromJSDate(new Date(date))
-      console.log(typeof date, date)
+      if (!date) {
+        return null
+      }
       const dateTime =
         typeof date === 'string'
           ? DateTime.fromISO(date)
           : DateTime.fromMillis(date)
-      //const dateTime = new Date(date)
-      if (!dateStart || date < dateStart) dateStart = dateTime
-      if (!dateEnd || date > dateEnd) dateEnd = dateTime
+      if (!dateStart || dateTime < dateStart) {
+        dateStart = dateTime
+      }
+      if (!dateEnd || dateTime > dateEnd) {
+        dateEnd = dateTime
+      }
 
       return dateTime
     }
@@ -115,33 +219,41 @@ class App extends Component {
       end: null,
     }
 
-    if (!queryRunner) {
+    if (!queryRunnerRunStart) {
       return
     }
 
+    let queryDuration = 0
+    let start = 0
+    let end = 0
+    try {
+      queryDuration =
+        new Date(queryRunnerRunEnd.time) - new Date(queryRunnerRunStart.time)
+      start = formatDate(queryRunnerRunStart.time)
+      end = formatDate(queryRunnerRunEnd.time)
+    } catch {}
     const query = {
       id: queryId,
-      seen: queryRunner.PeersSeen.length,
-      queried: queryRunner.PeersQueried.length,
-      duration: (queryRunner.Duration / 1000000000).toFixed(2),
-      start: formatDate(queryRunner.StartTime),
-      end: formatDate(queryRunner.EndTime),
+      // seen: queryRunner.PeersSeen.length,
+      // queried: queryRunner.PeersQueried.length,
+      duration: queryDuration,
+      start,
+      end,
       peers: [],
     }
 
-    const peersQueried = {}
     const findAndAddPeerAction = (peer, peerData) => {
-      let foundPeer = query.peers.find((p) => p.id === peer.peer)
+      let foundPeer = query.peers.find((p) => p.id === peer)
       if (!foundPeer) {
         foundPeer = {
-          id: peer.peer,
+          id: peer,
           actions: [],
         }
         query.peers.push(foundPeer)
       }
 
-      ;['dup', 'filteredPeersNum', 'closerPeersNum'].forEach((key) => {
-        if (!peerData[key]) return
+      ;['dup', 'filteredPeersNum', 'closerPeersNum', 'xor'].forEach((key) => {
+        if (!(key in peerData)) return
         foundPeer[key] = peerData[key]
       })
 
@@ -154,36 +266,34 @@ class App extends Component {
       })
     }
 
-    for (const peer of queryArray) {
+    for (const peer in peerQueriesObject) {
+      const peerObj = peerQueriesObject[peer]
+      const { filteredPeers, closerPeers, success, end, start } = peerObj
+      const filteredPeersNum = filteredPeers ? filteredPeers.length : 0
+      const closerPeersNum = closerPeers ? closerPeers.length : 0
       findAndAddPeerAction(peer, {
         type: 'query',
-        filteredPeersNum: peer.filteredPeers,
-        closerPeersNum: peer.closerPeers,
-        success: peer.success,
-        duration: (peer.Duration / 1000000).toFixed(2),
-        start: formatDate(peer.Start),
-        end: formatDate(
-          new Date(peer.Start).getTime() + peer.Duration / 1000000,
-        ),
+        filteredPeersNum,
+        closerPeersNum,
+        success,
+        duration: new Date(end) - new Date(start),
+        start: formatDate(start),
+        end: formatDate(end),
       })
     }
 
-    for (const peer of dialArray) {
-      let duplicate = false
-      if (peersQueried[peer.peer]) {
-        duplicate = true
-      }
-      peersQueried[peer.peer] = true
-
+    for (const peer in peerDialsObject) {
+      const peerObj = peerDialsObject[peer]
+      const { duplicate, alreadyConnected, success, end, start, xor } = peerObj
       findAndAddPeerAction(peer, {
         type: 'dial',
         dup: duplicate,
-        success: peer.dialSuccess,
-        duration: (peer.Duration / 1000000).toFixed(2),
-        start: formatDate(peer.Start),
-        end: formatDate(
-          new Date(peer.Start).getTime() + peer.Duration / 1000000,
-        ),
+        alreadyConnected,
+        success,
+        xor,
+        duration: new Date(end) - new Date(start),
+        start: formatDate(start),
+        end: formatDate(end),
       })
     }
 
@@ -204,7 +314,6 @@ class App extends Component {
 
   render() {
     const { data, queryStart, queryId, dateStart, dateEnd } = this.state
-    console.log('data is', data)
 
     return (
       <div>
@@ -216,12 +325,15 @@ class App extends Component {
             {queryStart &&
               queryStart.map((query) => (
                 <button
-                  onClick={() => this.changeQueryFilter(query.query)}
-                  className={`queryId ${queryId === query.query && 'selected'}`}
-                  key={query.query}
+                  onClick={() =>
+                    this.changeQueryFilter(query.QueryRunner.Query.Key)
+                  }
+                  className={`queryId ${queryId ===
+                    query.QueryRunner.Query.Key && 'selected'}`}
+                  key={query.QueryRunner.Query.Key}
                 >
-                  {query.query}
-                  {query.query === queryId && (
+                  {query.QueryRunner.Query.Key}
+                  {query.QueryRunner.Query.Key === queryId && (
                     <FontAwesomeIcon
                       icon={faCheckCircle}
                       style={{ color: '#7DC24B' }}
