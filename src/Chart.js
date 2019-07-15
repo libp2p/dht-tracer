@@ -1,6 +1,9 @@
 import React, { Component } from 'react'
 import ReactTooltip from 'react-tooltip'
 import { DateTime } from './DateTime'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faTimes } from '@fortawesome/free-solid-svg-icons'
+import { faCheck } from '@fortawesome/free-solid-svg-icons'
 
 class Chart extends Component {
   // state = {
@@ -68,6 +71,7 @@ class Peer extends Component {
     const { peer, data, windowWidth } = this.props
     const { id } = peer
     const label = `Peer ${id.toUpperCase()}`
+    console.log('peer is', peer)
 
     return (
       <div className="chartRow">
@@ -78,11 +82,17 @@ class Peer extends Component {
           {peer.actions.map((action, key) => (
             <div
               key={key}
-              className={`chartBar chartBarType${action.type} ${key > 0 &&
-                'additionalBar'}`}
+              className={`chartBar chartBarType${action.type}`}
               style={this.actionBarStyle(action, data, windowWidth)}
               data-tip={`${action.type} duration: ${action.duration}s`}
-            />
+            >
+              {action.success === 'failure' && (
+                <FontAwesomeIcon icon={faTimes} style={{ color: '#C74D6E' }} />
+              )}
+              {action.success === 'true' && (
+                <FontAwesomeIcon icon={faCheck} style={{ color: '#7DC24B' }} />
+              )}
+            </div>
           ))}
         </div>
       </div>

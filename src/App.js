@@ -150,6 +150,7 @@ class App extends Component {
         start: peerData.start,
         end: peerData.end,
         duration: peerData.duration,
+        success: peerData.success,
       })
     }
 
@@ -158,6 +159,7 @@ class App extends Component {
         type: 'query',
         filteredPeersNum: peer.filteredPeers,
         closerPeersNum: peer.closerPeers,
+        success: peer.success,
         duration: (peer.Duration / 1000000).toFixed(2),
         start: formatDate(peer.Start),
         end: formatDate(
@@ -176,6 +178,7 @@ class App extends Component {
       findAndAddPeerAction(peer, {
         type: 'dial',
         dup: duplicate,
+        success: peer.dialSuccess,
         duration: (peer.Duration / 1000000).toFixed(2),
         start: formatDate(peer.Start),
         end: formatDate(

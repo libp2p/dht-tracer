@@ -22,17 +22,17 @@ code {
 
 .chartLabel {
   display: inline-block;
-  width: 100px;
+  width: 120px;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
-  line-height: 50px;
+  line-height: 40px;
 }
 
 .chartMiniColumn {
   display: inline-block;
   width: 50px;
-  line-height: 50px;
+  line-height: 40px;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
@@ -41,28 +41,27 @@ code {
 
 .chartBars {
   display: inline-block;
-  height: 50px;
+  height: 40px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  position: relative;
 }
 
 .chartBars .chartBar {
   display: inline-block;
   height: 20px;
   line-height: 20px;
-  position: relative;
-  top: 14px;
+  position: absolute;
+  text-align: right;
+  padding-right: 2px;
 }
 
 .chartBarTypedial {
-  background: #4080ff;
+  background: #ffad87;
 }
 
 .chartBarTypequery {
-  background: #59cebc;
-}
-
-.chartBars .chartBar.additionalBar {
-  position: relative;
-  top: -13px;
+  background: #399472;
 }
 
 .chartBar:last-child {
