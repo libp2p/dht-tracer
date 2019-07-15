@@ -7,6 +7,7 @@ import { DateTime } from 'luxon'
 import './App.css'
 
 let fileReader
+var windowWidth = window.innerWidth - 20
 
 class App extends Component {
   state = {
@@ -92,14 +93,17 @@ class App extends Component {
     let dateStart = null
     let dateEnd = null
 
-    const formatDate = date => {
+    const formatDate = (date) => {
       //return new Date(date)
       //const dateTime = DateTime.fromJSDate(new Date(date))
       console.log(typeof date, date)
-      const dateTime = typeof date === 'string' ? DateTime.fromISO(date) : DateTime.fromMillis(date)
+      const dateTime =
+        typeof date === 'string'
+          ? DateTime.fromISO(date)
+          : DateTime.fromMillis(date)
       //const dateTime = new Date(date)
       if (!dateStart || date < dateStart) dateStart = dateTime
-      if (!dateEnd || date < dateEnd) dateEnd = dateTime
+      if (!dateEnd || date > dateEnd) dateEnd = dateTime
 
       return dateTime
     }
@@ -107,7 +111,7 @@ class App extends Component {
     const data = {
       queries: [],
       start: null,
-      end: null
+      end: null,
     }
 
     if (!queryRunner) {
@@ -121,21 +125,21 @@ class App extends Component {
       duration: (queryRunner.Duration / 1000000000).toFixed(2),
       start: formatDate(queryRunner.StartTime),
       end: formatDate(queryRunner.EndTime),
-      peers: []
+      peers: [],
     }
 
     const peersQueried = {}
     const findAndAddPeerAction = (peer, peerData) => {
-      let foundPeer = query.peers.find(p => p.id === peer.peer)
+      let foundPeer = query.peers.find((p) => p.id === peer.peer)
       if (!foundPeer) {
         foundPeer = {
           id: peer.peer,
-          actions: []
+          actions: [],
         }
         query.peers.push(foundPeer)
       }
 
-      ['dup', 'queryId', 'queryTotal'].forEach(key => {
+      ;['dup', 'queryId', 'queryTotal'].forEach((key) => {
         if (!peerData[key]) return
         foundPeer[key] = peerData[key]
       })
@@ -143,7 +147,7 @@ class App extends Component {
       foundPeer.actions.push({
         type: peerData.type,
         start: peerData.start,
-        end: peerData.end
+        end: peerData.end,
       })
     }
 
@@ -155,7 +159,7 @@ class App extends Component {
         start: formatDate(peer.Start),
         end: formatDate(
           new Date(peer.Start).getTime() + peer.Duration / 1000000,
-        )
+        ),
       })
     }
 
@@ -172,7 +176,7 @@ class App extends Component {
         start: formatDate(peer.Start),
         end: formatDate(
           new Date(peer.Start).getTime() + peer.Duration / 1000000,
-        )
+        ),
       })
     }
 
@@ -181,7 +185,7 @@ class App extends Component {
     data.queries.push(query)
 
     this.setState({
-      data: data
+      data: data,
     })
   }
 
@@ -232,19 +236,7 @@ class App extends Component {
           />
         </div>
         <div className={'my-pretty-chart-container'}>
-          {data && (
-            <Chart
-              width={'100vw'}
-              height={'100vh'}
-              chartType="Timeline"
-              loader={<div>Loading Chart</div>}
-              data={data}
-              options={{
-                showRowNumber: true,
-              }}
-              rootProps={{ 'data-testid': '1' }}
-            />
-          )}
+          {data && <Chart width={windowWidth} data={data} />}
         </div>
       </div>
     )

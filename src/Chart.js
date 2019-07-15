@@ -12,14 +12,16 @@ class Chart extends Component {
   //
 
   render() {
-    const { data } = this.props
+    const { data, width } = this.props
     const { queries, start, end } = data
 
     return (
       <div className="chart">
         <DateTime date={start} />
         <DateTime date={end} />
-        {queries.map((query, key) => <Query key={key} query={query} data={data} />)}
+        {queries.map((query, key) => (
+          <Query key={key} query={query} data={data} windowWidth={width} />
+        ))}
       </div>
     )
   }
@@ -27,50 +29,59 @@ class Chart extends Component {
 
 class Query extends Component {
   render() {
-    const { start, end, query, data } = this.props
+    const { start, end, query, data, windowWidth } = this.props
     const { peers } = query
 
     return (
       <div className="chart">
         <DateTime date={start} />
         <DateTime date={end} />
-        {peers.map((peer, key) => <Peer key={key} peer={peer} data={data} />)}
+        {peers.map((peer, key) => (
+          <Peer key={key} peer={peer} data={data} windowWidth={windowWidth} />
+        ))}
       </div>
     )
   }
 }
 
 class Peer extends Component {
-  actionBarStyle = (action, data) => {
-    const { startPos, endPos, width } = calculatePosByDates(data.start, data.end, action.start, action.end)
+  actionBarStyle = (action, data, windowWidth) => {
+    const { startPos, endPos, width } = calculatePosByDates(
+      data.start,
+      data.end,
+      action.start,
+      action.end,
+      windowWidth,
+    )
     const barStyle = {
       marginLeft: startPos,
       marginRight: endPos,
-      width
+      width: width,
     }
 
     return barStyle
   }
 
   render() {
-    const { peer, data } = this.props
-    const { id, type, start, end } = peer
-    const label = `Peer ${id.substr(0,6).toUpperCase()}`
+    const { peer, data, windowWidth } = this.props
+    const { id } = peer
+    const label = `Peer ${id.substr(0, 6).toUpperCase()}`
 
     return (
       <div className="chartRow">
-        <div className="chartLabel">
-          {label}
-        </div>
-        <div className="chartLabel">
-          xor
-        </div>
-        <div className="chartLabel">
-          hops
-        </div>
+        <div className="chartLabel">{label}</div>
+        <div className="chartLabel">xor</div>
+        <div className="chartLabel">hops</div>
         <div className="chartBars">
           {peer.actions.map((action, key) => (
-            <div key={key} className={`chartBar chartBarType${action.type}`} style={this.actionBarStyle(action, data)}>BAR - {action.type}</div>
+            <div
+              key={key}
+              className={`chartBar chartBarType${action.type} ${key > 0 &&
+                'additionalBar'}`}
+              style={this.actionBarStyle(action, data, windowWidth)}
+            >
+              BAR - {action.type}
+            </div>
           ))}
         </div>
       </div>
@@ -78,17 +89,20 @@ class Peer extends Component {
   }
 }
 
-const calculatePosByDates = (min, max, start, end) => {
-  const a = start - min
-  const b = end - max
-  const c = b - a
-  console.log(min, max, start, end)
-  console.log('A', a, 'B', b, 'C', c)
+const calculatePosByDates = (min, max, start, end, windowWidth) => {
+  const scale = windowWidth / (max - min)
+  const a = (start - min) * scale
+  const b = (max - end) * scale
+  const c = (end - start) * scale
+  console.log('scale is', scale)
+
+  // console.log(min, max, start, end)
+  // console.log('A', a, 'B', b, 'C', c)
 
   return {
-    startPos: 0,
-    endPos: 0,
-    width: c / max
+    startPos: a,
+    endPos: b,
+    width: c,
   }
 }
 
