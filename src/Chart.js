@@ -80,7 +80,7 @@ class Peer extends Component {
                 'additionalBar'}`}
               style={this.actionBarStyle(action, data, windowWidth)}
             >
-              BAR - {action.type}
+              {action.type}
             </div>
           ))}
         </div>
@@ -91,9 +91,9 @@ class Peer extends Component {
 
 const calculatePosByDates = (min, max, start, end, windowWidth) => {
   const scale = windowWidth / (max - min)
-  const a = (start - min) * scale
-  const b = (max - end) * scale
-  const c = (end - start) * scale
+  const a = Math.floor((start - min) * scale)
+  const b = Math.ceil((max - end) * scale)
+  const c = Math.ceil((end - start) * scale)
   console.log('scale is', scale)
 
   // console.log(min, max, start, end)

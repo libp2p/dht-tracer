@@ -31,7 +31,7 @@ code {
 }
 
 .chartBarTypedial {
-  background: #f5e06b;
+  background: #4080ff;
 }
 
 .chartBarTypequery {
@@ -40,15 +40,15 @@ code {
 
 .additionalBar {
   position: relative;
-  top: -75px;
+  top: -25px;
 }
 
-.chartBar:first-child {
+.chartBar:last-child {
   border-top-left-radius: 3px;
   border-bottom-left-radius: 3px;
 }
 
-.chartBar:last-child {
+.chartBar:first-child {
   border-top-right-radius: 3px;
   border-bottom-right-radius: 3px;
 }
