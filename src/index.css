@@ -1,13 +1,76 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #141b1f;
+  color: #dde5ec;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+.chartRow {
+  background: #0d1316;
+  border-bottom: 1px solid #444444;
+  padding: 5px 8px;
+}
+
+.chartLabel {
+  display: inline-block;
+  width: 100px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  line-height: 50px;
+}
+
+.chartMiniColumn {
+  display: inline-block;
+  width: 50px;
+  line-height: 50px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: center;
+}
+
+.chartBars {
+  display: inline-block;
+  height: 50px;
+}
+
+.chartBars .chartBar {
+  display: inline-block;
+  height: 20px;
+  line-height: 20px;
+  position: relative;
+  top: 14px;
+}
+
+.chartBarTypedial {
+  background: #4080ff;
+}
+
+.chartBarTypequery {
+  background: #59cebc;
+}
+
+.chartBars .chartBar.additionalBar {
+  position: relative;
+  top: -13px;
+}
+
+.chartBar:last-child {
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+
+.chartBar:first-child {
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
 }

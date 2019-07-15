@@ -6,11 +6,12 @@
     "@fortawesome/fontawesome-svg-core": "^1.2.19",
     "@fortawesome/free-solid-svg-icons": "^5.9.0",
     "@fortawesome/react-fontawesome": "^0.1.4",
-    "dhtmlx-gantt": "^6.1.7",
+    "luxon": "^1.17.1",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "react-google-charts": "^3.0.13",
-    "react-scripts": "3.0.1"
+    "react-scripts": "3.0.1",
+    "react-tooltip": "^3.10.0"
   },
   "scripts": {
     "start": "react-scripts start",
