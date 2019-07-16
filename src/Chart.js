@@ -8,6 +8,23 @@ import {
   faCheck,
 } from '@fortawesome/free-solid-svg-icons'
 
+const actionBarStyle = (action, data, windowWidth) => {
+  const { startPos, endPos, width } = calculatePosByDates(
+    data.start,
+    data.end,
+    action.start,
+    action.end,
+    windowWidth,
+  )
+  const barStyle = {
+    marginLeft: startPos,
+    marginRight: endPos,
+    width: width,
+  }
+
+  return barStyle
+}
+
 class Chart extends Component {
   // state = {
   //   data: []
@@ -25,8 +42,6 @@ class Chart extends Component {
     return (
       <div className="chart">
         <ReactTooltip />
-        <DateTime date={start} />
-        <DateTime date={end} />
         {queries.map((query, key) => (
           <Query key={key} query={query} data={data} windowWidth={width} />
         ))}
@@ -38,42 +53,65 @@ class Chart extends Component {
 class Query extends Component {
   render() {
     const { start, end, query, data, windowWidth } = this.props
-    const { peers } = query
+    const {
+      peers,
+      start: queryStart,
+      end: queryEnd,
+      id,
+      seen,
+      queried,
+      toQuery,
+    } = query
+    const barsWidth = windowWidth - 50
+
+    const label = `Query ${id.toUpperCase()}`
 
     return (
-      <div className="chart">
-        <DateTime date={start} />
-        <DateTime date={end} />
+      <>
+        <div className="chartRow">
+          <div className="chartLabel" />
+          <div className="chartMiniColumn" />
+          <div className="chartMiniColumn">xor</div>
+          <div className="chartMiniColumn">hops</div>
+        </div>
+        <div className="chartRow headerRow">
+          <div className="chartLabel">{label}</div>
+          <div className="chartMiniColumn" />
+          <div className="chartMiniColumn">xor</div>
+          <div className="chartMiniColumn">hops</div>
+          <div className="chartBars" style={{ width: windowWidth }}>
+            <div
+              key={id}
+              className={`chartBar chartBarTypemainquery`}
+              style={actionBarStyle(query, data, barsWidth)}
+              data-tip={`Query duration: ${query.duration}ms`}
+            >
+              {`Seen: ${seen}, Queried: ${queried}, To Query: ${toQuery}`}
+            </div>
+          </div>
+        </div>
         {peers.map((peer, key) => (
           <Peer key={key} peer={peer} data={data} windowWidth={windowWidth} />
         ))}
-      </div>
+      </>
     )
   }
 }
 
 class Peer extends Component {
-  actionBarStyle = (action, data, windowWidth) => {
-    const { startPos, endPos, width } = calculatePosByDates(
-      data.start,
-      data.end,
-      action.start,
-      action.end,
-      windowWidth,
-    )
-    const barStyle = {
-      marginLeft: startPos,
-      marginRight: endPos,
-      width: width,
+  afterBarStyle(smallestRightMargin, windowWidth, barsWidth) {
+    return {
+      marginLeft: barsWidth - smallestRightMargin,
     }
-
-    return barStyle
   }
 
   render() {
     const { peer, data, windowWidth } = this.props
-    const { id } = peer
+    const { id, filteredPeersNum, closerPeersNum } = peer
+    const barsWidth = windowWidth - 50
     const label = `Peer ${id.toUpperCase()}`
+    let smallestRightMargin = barsWidth
+    let totalDuration = 0
     console.log('peer is', peer)
 
     return (
@@ -90,21 +128,46 @@ class Peer extends Component {
         <div className="chartMiniColumn">{peer.xor}</div>
         <div className="chartMiniColumn">hops</div>
         <div className="chartBars" style={{ width: windowWidth }}>
-          {peer.actions.map((action, key) => (
-            <div
-              key={key}
-              className={`chartBar chartBarType${action.type}`}
-              style={this.actionBarStyle(action, data, windowWidth)}
-              data-tip={`${action.type} duration: ${action.duration}ms`}
-            >
-              {action.type === 'dial' && !action.success && (
-                <FontAwesomeIcon icon={faTimes} style={{ color: '#AB2346' }} />
-              )}
-              {action.type === 'query' && action.success && (
-                <FontAwesomeIcon icon={faCheck} style={{ color: '#00B295' }} />
-              )}
-            </div>
-          ))}
+          {peer.actions.map((action, key) => {
+            const style = actionBarStyle(action, data, barsWidth)
+            if (style.marginRight < smallestRightMargin) {
+              smallestRightMargin = style.marginRight
+            }
+            totalDuration += action.duration
+
+            return (
+              <div
+                key={key}
+                className={`chartBar chartBarType${action.type}`}
+                style={style}
+                data-tip={`${action.type} duration: ${action.duration}ms`}
+              >
+                {action.type === 'dial' && !action.success && (
+                  <FontAwesomeIcon
+                    icon={faTimes}
+                    style={{ color: '#AB2346' }}
+                  />
+                )}
+                {action.type === 'query' && action.success && (
+                  <FontAwesomeIcon
+                    icon={faCheck}
+                    style={{ color: '#00B295' }}
+                  />
+                )}
+              </div>
+            )
+          })}
+          <div
+            className="chartBar chartBarAfterDescription"
+            style={this.afterBarStyle(
+              smallestRightMargin,
+              windowWidth,
+              barsWidth,
+            )}
+          >
+            {`${totalDuration}ms`}{' '}
+            {closerPeersNum ? `${closerPeersNum}/${filteredPeersNum}` : ''}
+          </div>
         </div>
       </div>
     )

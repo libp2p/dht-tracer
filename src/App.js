@@ -87,8 +87,7 @@ class App extends Component {
     )
 
     const queryResultArray = this.findEventsForTypeAndQuery(
-      // @todo: update this for new name
-      'queryPeer.Result',
+      'dhtQueryRunner.queryPeer.Result',
       queryId,
     )
 
@@ -234,8 +233,9 @@ class App extends Component {
     } catch {}
     const query = {
       id: queryId,
-      // seen: queryRunner.PeersSeen.length,
-      // queried: queryRunner.PeersQueried.length,
+      seen: queryRunnerRunEnd.QueryRunner.PeersSeen.length,
+      queried: queryRunnerRunEnd.QueryRunner.PeersQueried.length,
+      toQuery: queryRunnerRunEnd.QueryRunner.PeersToQueryLen,
       duration: queryDuration,
       start,
       end,

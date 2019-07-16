@@ -20,6 +20,10 @@ code {
   padding: 5px 8px;
 }
 
+.headerRow {
+  border: 2px solid white;
+}
+
 .chartLabel {
   display: inline-block;
   width: 120px;
@@ -53,15 +57,25 @@ code {
   line-height: 20px;
   position: absolute;
   text-align: right;
-  padding-right: 2px;
+}
+
+.chartBarAfterDescription {
+  padding-left: 5px;
 }
 
 .chartBarTypedial {
-  background: #eef8ff;
+  background: #71a2b6;
 }
 
 .chartBarTypequery {
   background: #2af5ff;
+}
+
+.chartBars .chartBar.chartBarTypemainquery {
+  background: #28c2ff;
+  color: black;
+  font-weight: bold;
+  text-align: left;
 }
 
 .chartBar:last-child {
