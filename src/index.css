@@ -64,17 +64,17 @@ code {
 }
 
 .chartBarTypedial {
-  background: #71a2b6;
+  background: #a5c882;
 }
 
 .chartBarTypequery {
-  background: #2af5ff;
+  background: #5ab1bb;
 }
 
 .chartBars .chartBar.chartBarTypemainquery {
-  background: #28c2ff;
-  color: black;
-  font-weight: bold;
+  background: #324a5f;
+  color: white;
+  font-weight: 500;
   text-align: left;
 }
 

@@ -107,7 +107,7 @@ class Peer extends Component {
 
   render() {
     const { peer, data, windowWidth } = this.props
-    const { id, filteredPeersNum, closerPeersNum } = peer
+    const { id, filteredPeersNum, closerPeersNum, newPeersNum } = peer
     const barsWidth = windowWidth - 50
     const label = `Peer ${id.toUpperCase()}`
     let smallestRightMargin = barsWidth
@@ -121,7 +121,7 @@ class Peer extends Component {
           {peer.dup && (
             <FontAwesomeIcon
               icon={faExclamationTriangle}
-              style={{ color: '#F4E04D' }}
+              style={{ color: '#F7DD72' }}
             />
           )}
         </div>
@@ -145,13 +145,13 @@ class Peer extends Component {
                 {action.type === 'dial' && !action.success && (
                   <FontAwesomeIcon
                     icon={faTimes}
-                    style={{ color: '#AB2346' }}
+                    style={{ color: '#6B0F1A', padding: '2px' }}
                   />
                 )}
                 {action.type === 'query' && action.success && (
                   <FontAwesomeIcon
                     icon={faCheck}
-                    style={{ color: '#00B295' }}
+                    style={{ color: '#00B295', padding: '2px' }}
                   />
                 )}
               </div>
@@ -166,7 +166,9 @@ class Peer extends Component {
             )}
           >
             {`${totalDuration}ms`}{' '}
-            {closerPeersNum ? `${closerPeersNum}/${filteredPeersNum}` : ''}
+            {closerPeersNum
+              ? `${closerPeersNum}/${filteredPeersNum}/${newPeersNum}`
+              : ''}
           </div>
         </div>
       </div>

@@ -105,11 +105,27 @@ class App extends Component {
       }
     }
 
+    const findNumNewPeers = (peerQuery) => {
+      const {
+        filteredPeers,
+        QueryRunner: { PeersSeen },
+      } = peerQuery
+      let newPeersNum = 0
+      for (const peer of filteredPeers) {
+        if (!PeersSeen.includes(peer)) {
+          newPeersNum += 1
+        }
+      }
+
+      return newPeersNum
+    }
+
     for (const peerQuery of queryResultArray) {
       if (peerQueries[peerQuery.peerID]) {
         peerQueries[peerQuery.peerID].success = peerQuery.success
         peerQueries[peerQuery.peerID].filteredPeers = peerQuery.filteredPeers
         peerQueries[peerQuery.peerID].closerPeers = peerQuery.closerPeers
+        peerQueries[peerQuery.peerID].newPeersNum = findNumNewPeers(peerQuery)
       }
     }
 
@@ -252,7 +268,13 @@ class App extends Component {
         query.peers.push(foundPeer)
       }
 
-      ;['dup', 'filteredPeersNum', 'closerPeersNum', 'xor'].forEach((key) => {
+      ;[
+        'dup',
+        'filteredPeersNum',
+        'closerPeersNum',
+        'newPeersNum',
+        'xor',
+      ].forEach((key) => {
         if (!(key in peerData)) return
         foundPeer[key] = peerData[key]
       })
@@ -268,13 +290,21 @@ class App extends Component {
 
     for (const peer in peerQueriesObject) {
       const peerObj = peerQueriesObject[peer]
-      const { filteredPeers, closerPeers, success, end, start } = peerObj
+      const {
+        filteredPeers,
+        closerPeers,
+        newPeersNum,
+        success,
+        end,
+        start,
+      } = peerObj
       const filteredPeersNum = filteredPeers ? filteredPeers.length : 0
       const closerPeersNum = closerPeers ? closerPeers.length : 0
       findAndAddPeerAction(peer, {
         type: 'query',
         filteredPeersNum,
         closerPeersNum,
+        newPeersNum,
         success,
         duration: new Date(end) - new Date(start),
         start: formatDate(start),
