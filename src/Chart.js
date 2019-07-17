@@ -25,6 +25,12 @@ const actionBarStyle = (action, data, windowWidth) => {
   return barStyle
 }
 
+const afterBarStyle = (smallestRightMargin, windowWidth, barsWidth) => {
+  return {
+    marginLeft: barsWidth - smallestRightMargin,
+  }
+}
+
 class Chart extends Component {
   // state = {
   //   data: []
@@ -52,7 +58,9 @@ class Chart extends Component {
 
 class Query extends Component {
   render() {
-    const { start, end, query, data, windowWidth } = this.props
+    const { query, data, windowWidth } = this.props
+    console.log('query is', query)
+    console.log('data is', data)
     const {
       peers,
       start: queryStart,
@@ -65,6 +73,9 @@ class Query extends Component {
     const barsWidth = windowWidth - 50
 
     const label = `Query ${id.toUpperCase()}`
+    const style = actionBarStyle(query, data, barsWidth)
+
+    console.log('style is', style)
 
     return (
       <>
@@ -83,10 +94,16 @@ class Query extends Component {
             <div
               key={id}
               className={`chartBar chartBarTypemainquery`}
-              style={actionBarStyle(query, data, barsWidth)}
+              style={style}
               data-tip={`Query duration: ${query.duration}ms`}
             >
               {`Seen: ${seen}, Queried: ${queried}, To Query: ${toQuery}`}
+            </div>
+            <div
+              className="chartBar chartBarAfterDescription"
+              style={afterBarStyle(style.marginRight, windowWidth, barsWidth)}
+            >
+              {`${query.duration}ms`}
             </div>
           </div>
         </div>
@@ -99,12 +116,6 @@ class Query extends Component {
 }
 
 class Peer extends Component {
-  afterBarStyle(smallestRightMargin, windowWidth, barsWidth) {
-    return {
-      marginLeft: barsWidth - smallestRightMargin,
-    }
-  }
-
   render() {
     const { peer, data, windowWidth } = this.props
     const { id, filteredPeersNum, closerPeersNum, newPeersNum } = peer
@@ -112,7 +123,6 @@ class Peer extends Component {
     const label = `Peer ${id.toUpperCase()}`
     let smallestRightMargin = barsWidth
     let totalDuration = 0
-    console.log('peer is', peer)
 
     return (
       <div className="chartRow">
@@ -120,13 +130,18 @@ class Peer extends Component {
         <div className="chartMiniColumn">
           {peer.dup && (
             <FontAwesomeIcon
+              data-tip="duplicate"
               icon={faExclamationTriangle}
               style={{ color: '#F7DD72' }}
             />
           )}
         </div>
-        <div className="chartMiniColumn">{peer.xor}</div>
-        <div className="chartMiniColumn">hops</div>
+        <div data-tip="xor" className="chartMiniColumn">
+          {peer.xor}
+        </div>
+        <div data-tip="hops" className="chartMiniColumn">
+          {peer.hops}
+        </div>
         <div className="chartBars" style={{ width: windowWidth }}>
           {peer.actions.map((action, key) => {
             const style = actionBarStyle(action, data, barsWidth)
@@ -140,30 +155,35 @@ class Peer extends Component {
                 key={key}
                 className={`chartBar chartBarType${action.type}`}
                 style={style}
-                data-tip={`${action.type} duration: ${action.duration}ms`}
+                data-tip={`${action.type} ${
+                  action.type === 'dial' && peer.alreadyConnected
+                    ? 'already connected'
+                    : action.type === 'added'
+                    ? ''
+                    : `duration: ${action.duration}ms`
+                }`}
               >
                 {action.type === 'dial' && !action.success && (
                   <FontAwesomeIcon
+                    data-tip="dial-failure"
                     icon={faTimes}
                     style={{ color: '#6B0F1A', padding: '2px' }}
                   />
                 )}
                 {action.type === 'query' && action.success && (
                   <FontAwesomeIcon
+                    data-tip="records found"
                     icon={faCheck}
-                    style={{ color: '#00B295', padding: '2px' }}
+                    style={{ color: '#7353BA', padding: '2px' }}
                   />
                 )}
               </div>
             )
           })}
           <div
+            data-tip="total duration # closer peers / # filtered peers / # new peers"
             className="chartBar chartBarAfterDescription"
-            style={this.afterBarStyle(
-              smallestRightMargin,
-              windowWidth,
-              barsWidth,
-            )}
+            style={afterBarStyle(smallestRightMargin, windowWidth, barsWidth)}
           >
             {`${totalDuration}ms`}{' '}
             {closerPeersNum
@@ -180,7 +200,11 @@ const calculatePosByDates = (min, max, start, end, windowWidth) => {
   const scale = windowWidth / (max - min)
   const a = Math.floor((start - min) * scale)
   const b = Math.ceil((max - end) * scale)
-  const c = Math.ceil((end - start) * scale)
+  let c = Math.ceil((end - start) * scale)
+  // test this so we can see when events with no duration happened
+  if (c === 0) {
+    c = 1
+  }
 
   return {
     startPos: a,

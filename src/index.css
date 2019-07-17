@@ -71,6 +71,10 @@ code {
   background: #5ab1bb;
 }
 
+.chartBarTypeadded {
+  background: #747c92;
+}
+
 .chartBars .chartBar.chartBarTypemainquery {
   background: #324a5f;
   color: white;
