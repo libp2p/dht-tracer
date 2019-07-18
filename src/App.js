@@ -15,8 +15,42 @@ class App extends Component {
     data: null,
     queryStart: null,
     queryId: null,
+    darkMode: false,
   }
   formattedArray = []
+
+  // @todo: complete this, need to change server to return proper format for sse if taking this approach
+  readStream = () => {
+    console.log('READ STREAM')
+    if (!!window.EventSource) {
+      var source = new EventSource('http://lvh.me:9000/events')
+    }
+    source.addEventListener(
+      'open',
+      function(e) {
+        console.log('opened')
+      },
+      false,
+    )
+
+    source.addEventListener(
+      'error',
+      function(e) {
+        console.log('error')
+        if (e.readyState === EventSource.CLOSED) {
+          console.log('connection closed')
+        }
+      },
+      false,
+    )
+    source.addEventListener(
+      'message',
+      function(e) {
+        console.log(e.data)
+      },
+      false,
+    )
+  }
 
   handleFileChosen = (file) => {
     fileReader = new FileReader()
@@ -36,27 +70,37 @@ class App extends Component {
     // initially show the first query that was started within the file
     const queryId = queryStart[0].QueryRunner.Query.Key
     this.setState({ queryId, queryStart })
-    this.filterData(queryId)
+    this.filterData()
   }
 
-  changeQueryFilter(queryId) {
-    console.log('change to', queryId)
+  changeQueryFilter = (queryId) => {
     if (queryId === this.state.queryId) {
       return
     }
     this.setState({ queryId })
-    this.filterData(queryId)
   }
 
-  filterData(queryId) {
+  filterData = () => {
     // filter and reformat the data for the visualization
     EventLogParser.formattedArray = this.formattedArray
-    const data = EventLogParser.formatEvents(queryId)
+    const data = EventLogParser.formatEvents()
     this.setState({ data })
   }
 
+  toggleDarkMode = () => {
+    const { darkMode } = this.state
+    const newDarkMode = !darkMode
+    this.setState({ darkMode: newDarkMode })
+    if (newDarkMode) {
+      document.body.classList.add('darkMode')
+    } else {
+      document.body.classList.remove('darkMode')
+    }
+  }
+
   render() {
-    const { data, queryStart, queryId } = this.state
+    const { data, queryStart, queryId, darkMode } = this.state
+    console.log('app', darkMode)
 
     return (
       <div>
@@ -87,6 +131,9 @@ class App extends Component {
           </div>
         )}
         <div className="row center">
+          <button onClick={this.toggleDarkMode}>Toggle Dark Mode</button>
+        </div>
+        <div className="row center">
           <label htmlFor="file-upload" className="custom-file-upload">
             Choose file with log output
           </label>
@@ -97,9 +144,21 @@ class App extends Component {
             onChange={(e) => this.handleFileChosen(e.target.files[0])}
           />
         </div>
-        <div className={'my-pretty-chart-container'}>
-          {data && <Chart width={windowWidth} data={data} />}
-        </div>
+
+        {/* <button onClick={this.readStream}>Read from stream</button> */}
+
+        {queryId && (
+          <div className={'my-pretty-chart-container'}>
+            {data && (
+              <Chart
+                width={windowWidth}
+                data={data}
+                queryId={queryId}
+                darkMode={darkMode}
+              />
+            )}
+          </div>
+        )}
       </div>
     )
   }

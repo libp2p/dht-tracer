@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
 import ReactTooltip from 'react-tooltip'
-import { DateTime } from './DateTime'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faTimes,
@@ -42,15 +41,21 @@ class Chart extends Component {
   //
 
   render() {
-    const { data, width } = this.props
-    const { queries, start, end } = data
+    const { data, width, queryId, darkMode } = this.props
+    const { queries } = data
+    console.log('chart', darkMode)
+
+    const query = queries[queryId]
 
     return (
       <div className="chart">
         <ReactTooltip />
-        {queries.map((query, key) => (
-          <Query key={key} query={query} data={data} windowWidth={width} />
-        ))}
+        <Query
+          query={query}
+          data={data}
+          windowWidth={width}
+          darkMode={darkMode}
+        />
       </div>
     )
   }
@@ -58,22 +63,13 @@ class Chart extends Component {
 
 class Query extends Component {
   render() {
-    const { query, data, windowWidth } = this.props
-    console.log('query is', query)
-    console.log('data is', data)
-    const {
-      peers,
-      start: queryStart,
-      end: queryEnd,
-      id,
-      seen,
-      queried,
-      toQuery,
-    } = query
+    const { query, windowWidth, darkMode } = this.props
+    console.log('query', darkMode)
+    const { peers, id, seen, queried, toQuery } = query
     const barsWidth = windowWidth - 50
 
     const label = `Query ${id.toUpperCase()}`
-    const style = actionBarStyle(query, data, barsWidth)
+    const style = actionBarStyle(query, query, barsWidth)
 
     console.log('style is', style)
 
@@ -108,7 +104,13 @@ class Query extends Component {
           </div>
         </div>
         {peers.map((peer, key) => (
-          <Peer key={key} peer={peer} data={data} windowWidth={windowWidth} />
+          <Peer
+            key={key}
+            peer={peer}
+            query={query}
+            windowWidth={windowWidth}
+            darkMode={darkMode}
+          />
         ))}
       </>
     )
@@ -117,7 +119,8 @@ class Query extends Component {
 
 class Peer extends Component {
   render() {
-    const { peer, data, windowWidth } = this.props
+    const { peer, query, windowWidth, darkMode } = this.props
+    console.log('peers', darkMode)
     const { id, filteredPeersNum, closerPeersNum, newPeersNum } = peer
     const barsWidth = windowWidth - 50
     const label = `Peer ${id.toUpperCase()}`
@@ -132,7 +135,7 @@ class Peer extends Component {
             <FontAwesomeIcon
               data-tip="duplicate"
               icon={faExclamationTriangle}
-              style={{ color: '#F7DD72' }}
+              className="duplicateExclamation"
             />
           )}
         </div>
@@ -144,7 +147,7 @@ class Peer extends Component {
         </div>
         <div className="chartBars" style={{ width: windowWidth }}>
           {peer.actions.map((action, key) => {
-            const style = actionBarStyle(action, data, barsWidth)
+            const style = actionBarStyle(action, query, barsWidth)
             if (style.marginRight < smallestRightMargin) {
               smallestRightMargin = style.marginRight
             }
@@ -167,14 +170,14 @@ class Peer extends Component {
                   <FontAwesomeIcon
                     data-tip="dial-failure"
                     icon={faTimes}
-                    style={{ color: '#6B0F1A', padding: '2px' }}
+                    className="dialFailure"
                   />
                 )}
                 {action.type === 'query' && action.success && (
                   <FontAwesomeIcon
                     data-tip="records found"
                     icon={faCheck}
-                    style={{ color: '#7353BA', padding: '2px' }}
+                    className="recordsFound"
                   />
                 )}
               </div>

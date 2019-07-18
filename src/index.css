@@ -5,8 +5,6 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #141b1f;
-  color: #dde5ec;
 }
 
 code {
@@ -14,8 +12,15 @@ code {
     monospace;
 }
 
-.chartRow {
+.darkMode {
   background: #0d1316;
+}
+
+.darkMode .chartRow {
+  background: #0d1316;
+}
+
+.chartRow {
   border-bottom: 1px solid #444444;
   padding: 5px 8px;
 }
@@ -63,16 +68,52 @@ code {
   padding-left: 5px;
 }
 
-.chartBarTypedial {
+.darkMode .chartBarTypedial {
   background: #a5c882;
 }
 
-.chartBarTypequery {
+.chartBarTypedial {
+  background: #89909f;
+}
+
+.darkMode .chartBarTypequery {
   background: #5ab1bb;
+}
+
+.chartBarTypequery {
+  background: #538083;
 }
 
 .chartBarTypeadded {
   background: #747c92;
+}
+
+.recordsFound {
+  color: #7353ba;
+  padding: '2px';
+}
+
+.darkMode .recordsFound {
+  color: #bad9b5;
+  padding: '2px';
+}
+
+.duplicateExclamation {
+  color: #f7dd72;
+}
+
+.darkMode .duplicateExclamation {
+  color: #dda15e;
+}
+
+.dialFailure {
+  color: #eacbd2;
+  padding: '2px';
+}
+
+.darkMode .dialFailure {
+  color: #6b0f1a;
+  padding: '2px';
 }
 
 .chartBars .chartBar.chartBarTypemainquery {
