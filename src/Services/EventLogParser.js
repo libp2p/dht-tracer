@@ -48,12 +48,6 @@ class EventLogParserService {
     }
   }
 
-  findEventsForTypeAndQuery(type, queryId) {
-    return this.formattedArray
-      .filter((event) => event.event === type)
-      .filter((event) => event.QueryRunner.Query.Key === queryId)
-  }
-
   findAndAddPeerAction = (peerID, queryID, peerData) => {
     let foundPeer = this.data.queries[queryID].peers.find(
       (p) => p.id === peerID,
@@ -244,7 +238,6 @@ class EventLogParserService {
     } = QueryRunner
     const peerDialObject =
       this.data.queries[Key] && this.data.queries[Key].peerDials[peerID]
-    console.log('peer dial object is', peerID, this.data.queries[Key])
     if (peerDialObject) {
       peerDialObject.end = time
       peerDialObject.success = false
@@ -260,7 +253,6 @@ class EventLogParserService {
     } = QueryRunner
     const peerDialObject =
       this.data.queries[Key] && this.data.queries[Key].peerDials[peerID]
-    console.log('peer dial object is', peerID, this.data.queries[Key])
     if (peerDialObject) {
       peerDialObject.end = time
       peerDialObject.success = true
@@ -331,7 +323,6 @@ class EventLogParserService {
         this.processDialPeerDialing(eventLog)
         break
       case 'dhtQueryRunner.dialPeer.DialFailure':
-        console.log('dial failure')
         this.processDialPeerFailure(eventLog)
         break
       case 'dhtQueryRunner.dialPeer.DialSuccess':
@@ -360,6 +351,8 @@ class EventLogParserService {
         break
       default:
     }
+
+    return this.data
   }
 
   formatEvents() {

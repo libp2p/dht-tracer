@@ -5,15 +5,16 @@ import {
   faTimes,
   faExclamationTriangle,
   faCheck,
+  faCheckDouble,
 } from '@fortawesome/free-solid-svg-icons'
 
 const actionBarStyle = (action, data, windowWidth) => {
   const { startPos, endPos, width } = calculatePosByDates(
-    data.start,
-    data.end,
-    action.start,
-    action.end,
-    windowWidth,
+    new Date(data.start),
+    new Date(data.end),
+    new Date(action.start),
+    new Date(action.end),
+    new Date(windowWidth),
   )
   const barStyle = {
     marginLeft: startPos,
@@ -31,31 +32,42 @@ const afterBarStyle = (smallestRightMargin, windowWidth, barsWidth) => {
 }
 
 class Chart extends Component {
-  // state = {
-  //   data: []
-  // }
-  //
-  // static getDerivedStateFromProps(props, state) {
-  //   return props
-  // }
-  //
+  shouldComponentUpdate(nextProps, nextState) {
+    const { queryId: nextQueryId, data: nextData } = nextProps
+    const { queryId, data } = this.props
+
+    if (nextQueryId !== queryId) {
+      return true
+    }
+
+    if (data.queries[queryId].end !== nextData.queries[queryId].end) {
+      return true
+    }
+
+    if (
+      data.queries[queryId].queryCompleted !==
+      nextData.queries[queryId].queryCompleted
+    ) {
+      return true
+    }
+
+    return false
+  }
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    ReactTooltip.rebuild()
+  }
 
   render() {
-    const { data, width, queryId, darkMode } = this.props
+    const { data, width, queryId } = this.props
     const { queries } = data
-    console.log('chart', darkMode)
 
     const query = queries[queryId]
 
     return (
       <div className="chart">
         <ReactTooltip />
-        <Query
-          query={query}
-          data={data}
-          windowWidth={width}
-          darkMode={darkMode}
-        />
+        <Query query={query} data={data} windowWidth={width} />
       </div>
     )
   }
@@ -63,15 +75,18 @@ class Chart extends Component {
 
 class Query extends Component {
   render() {
-    const { query, windowWidth, darkMode } = this.props
-    console.log('query', darkMode)
-    const { peers, id, seen, queried, toQuery } = query
+    const { query, windowWidth } = this.props
+    const { peers, id, seen, queried, toQuery, queryCompleted } = query
     const barsWidth = windowWidth - 50
+    console.log('query is', query)
 
     const label = `Query ${id.toUpperCase()}`
     const style = actionBarStyle(query, query, barsWidth)
-
-    console.log('style is', style)
+    const styleAfterBar = afterBarStyle(
+      style.marginRight,
+      windowWidth,
+      barsWidth,
+    )
 
     return (
       <>
@@ -94,23 +109,25 @@ class Query extends Component {
               data-tip={`Query duration: ${query.duration}ms`}
             >
               {`Seen: ${seen}, Queried: ${queried}, To Query: ${toQuery}`}
+              {queryCompleted && (
+                <FontAwesomeIcon
+                  data-tip="queryCompleted"
+                  icon={faCheckDouble}
+                  className="queryCompleted"
+                />
+              )}
             </div>
+
             <div
               className="chartBar chartBarAfterDescription"
-              style={afterBarStyle(style.marginRight, windowWidth, barsWidth)}
+              style={styleAfterBar}
             >
               {`${query.duration}ms`}
             </div>
           </div>
         </div>
         {peers.map((peer, key) => (
-          <Peer
-            key={key}
-            peer={peer}
-            query={query}
-            windowWidth={windowWidth}
-            darkMode={darkMode}
-          />
+          <Peer key={key} peer={peer} query={query} windowWidth={windowWidth} />
         ))}
       </>
     )
@@ -119,8 +136,7 @@ class Query extends Component {
 
 class Peer extends Component {
   render() {
-    const { peer, query, windowWidth, darkMode } = this.props
-    console.log('peers', darkMode)
+    const { peer, query, windowWidth } = this.props
     const { id, filteredPeersNum, closerPeersNum, newPeersNum } = peer
     const barsWidth = windowWidth - 50
     const label = `Peer ${id.toUpperCase()}`
@@ -205,7 +221,7 @@ const calculatePosByDates = (min, max, start, end, windowWidth) => {
   const b = Math.ceil((max - end) * scale)
   let c = Math.ceil((end - start) * scale)
   // test this so we can see when events with no duration happened
-  if (c === 0) {
+  if (c < 1) {
     c = 1
   }
 

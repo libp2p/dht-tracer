@@ -84,7 +84,11 @@ code {
   background: #538083;
 }
 
-.chartBarTypeadded {
+.darkMode .chartBarTypeadd {
+  background: #ffffff;
+}
+
+.chartBarTypeadd {
   background: #747c92;
 }
 
@@ -131,4 +135,29 @@ code {
 .chartBar:first-child {
   border-top-right-radius: 3px;
   border-bottom-right-radius: 3px;
+}
+
+.tracer button {
+  margin-bottom: 0;
+}
+
+.tracer .customFileUpload {
+  font-weight: 600;
+  border: 1px solid;
+  border-radius: 4px;
+  border-color: rgb(216, 216, 216) rgb(209, 209, 209) rgb(186, 186, 186);
+  padding: 0 20px;
+  height: 40px;
+  line-height: 40px;
+  transition: all 0.1s ease-out;
+}
+
+.tracer .customFileUpload:hover {
+  opacity: 0.85;
+  cursor: pointer;
+  transform: scale(1.025);
+}
+
+.queryCompleted {
+  float: right;
 }
