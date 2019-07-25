@@ -2,7 +2,10 @@ import React, { Component } from 'react'
 //import { Chart } from 'react-google-charts'
 import { Chart } from './Chart'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCheckCircle } from '@fortawesome/free-solid-svg-icons'
+import {
+  faCheckCircle,
+  faExclamationCircle,
+} from '@fortawesome/free-solid-svg-icons'
 
 import './App.css'
 import { EventLogParser } from './Services/EventLogParser'
@@ -16,6 +19,7 @@ class App extends Component {
     queryId: null,
     darkMode: false,
     readingStream: false,
+    fileReadError: false,
   }
   formattedArray = []
 
@@ -23,7 +27,7 @@ class App extends Component {
     this.setState({ readingStream: true })
     console.log('READ STREAM')
     if (!!window.EventSource) {
-      var source = new EventSource('http://lvh.me:9000/events')
+      var source = new EventSource('http://lvh.me:7000/events')
     }
     source.addEventListener(
       'open',
@@ -66,9 +70,13 @@ class App extends Component {
   handleFileRead = (e) => {
     // TODO: reject random files
     const content = fileReader.result
-    this.formattedArray = EventLogParser.parseFileContent(content)
-    this.identifyFirstQuery()
-    this.filterData()
+    try {
+      this.formattedArray = EventLogParser.parseFileContent(content)
+      this.identifyFirstQuery()
+      this.filterData()
+    } catch {
+      this.setState({ fileReadError: true })
+    }
   }
 
   identifyFirstQuery = () => {
@@ -76,9 +84,11 @@ class App extends Component {
     const queryStart = this.formattedArray.filter(
       (event) => event.event === 'dhtQueryRunner.Run.Start',
     )
+    console.log('query start is', queryStart)
     // initially show the first query that was started within the file
+
     const queryId = queryStart[0].QueryRunner.Query.Key
-    this.setState({ queryId, queryStart })
+    this.setState({ queryId })
   }
 
   changeQueryFilter = (queryId) => {
@@ -92,7 +102,6 @@ class App extends Component {
     // filter and reformat the data for the visualization
     EventLogParser.formattedArray = this.formattedArray
     const data = EventLogParser.formatEvents()
-    console.log('data is', data)
     this.setState({ data })
   }
 
@@ -108,8 +117,9 @@ class App extends Component {
   }
 
   render() {
-    let { data, queryId, darkMode, readingStream } = this.state
+    let { data, queryId, darkMode, readingStream, fileReadError } = this.state
 
+    console.log('data is', data)
     if (data && data.queries && !queryId) {
       queryId = Object.keys(data.queries)[0]
     }
@@ -117,7 +127,21 @@ class App extends Component {
     return (
       <div className="tracer">
         <h4 className="text-center padding">DHT Tracer </h4>
-        {data && data.queries && (
+        {fileReadError && (
+          <div className="errorMessage">
+            <div>
+              <FontAwesomeIcon
+                icon={faExclamationCircle}
+                className="errorIcon"
+              />
+              Sorry, your log file seems to be improperly formatted. Please make
+              sure there isn't any extra info in your log file and your log
+              entries are formatted like the below examples:{' '}
+            </div>
+            <code>{`data: {"QueryRunner":{"CurrTime":"2019-07-24T18:26:20.321273-07:00","EndTime":"0001-01-01T00:00:00Z","PeersDialQueueLen":0,"PeersDialed":null,"PeersDialedNew":[],"PeersQueried":[],"PeersRemainingLen":0,"PeersSeen":[],"PeersToQueryLen":0,"Query":{"Concurrency":0,"Key":"/provider/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ","Type":""},"RateLimit":{"Capacity":3,"Length":0},"Result":{"CloserPeers":null,"FinalSet":null,"FoundPeer":"","QueriedSet":null,"Success":false},"StartTime":"2019-07-24T18:26:20.321265-07:00"},"event":"dhtQueryRunner.Run.Start","system":"dht","time":"2019-07-25T01:26:20.321328Z"}\n\ndata: {"Hops":0,"QueryRunner":{"CurrTime":"2019-07-24T18:26:20.321372-07:00","EndTime":"0001-01-01T00:00:00Z","PeersDialQueueLen":0,"PeersDialed":null,"PeersDialedNew":[],"PeersQueried":[],"PeersRemainingLen":0,"PeersSeen":["QmU74uDuMSgouK61ND71bjaYxTJme7iUxAqzp6RygtzQb3"],"PeersToQueryLen":0,"Query":{"Concurrency":0,"Key":"/provider/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ","Type":""},"RateLimit":{"Capacity":3,"Length":3},"Result":{"CloserPeers":null,"FinalSet":null,"FoundPeer":"","QueriedSet":null,"Success":false},"StartTime":"2019-07-24T18:26:20.321265-07:00"},"XOR":12,"event":"dhtQueryRunner.addPeerToQuery","peerID":"QmU74uDuMSgouK61ND71bjaYxTJme7iUxAqzp6RygtzQb3","system":"dht","time":"2019-07-25T01:26:20.321409Z"}`}</code>
+          </div>
+        )}
+        {data && queryId && (
           <div>
             {' '}
             Queries Found:
@@ -166,7 +190,7 @@ class App extends Component {
         )}
 
         <div className={'my-pretty-chart-container'}>
-          {data && (
+          {data && queryId && (
             <Chart
               width={windowWidth}
               data={data}

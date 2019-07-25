@@ -73,15 +73,15 @@ code {
 }
 
 .chartBarTypedial {
-  background: #89909f;
+  background: #a5c882;
 }
 
 .darkMode .chartBarTypequery {
-  background: #5ab1bb;
+  background: #17bebb;
 }
 
 .chartBarTypequery {
-  background: #538083;
+  background: #17bebb;
 }
 
 .darkMode .chartBarTypeadd {
@@ -93,13 +93,13 @@ code {
 }
 
 .recordsFound {
-  color: #7353ba;
-  padding: '2px';
+  color: #ffffff;
+  padding: 2px;
 }
 
 .darkMode .recordsFound {
-  color: #bad9b5;
-  padding: '2px';
+  color: #64b6ac;
+  padding: 2px;
 }
 
 .duplicateExclamation {
@@ -111,34 +111,33 @@ code {
 }
 
 .dialFailure {
-  color: #eacbd2;
-  padding: '2px';
+  color: #ffffff;
+  padding: 2px;
 }
 
 .darkMode .dialFailure {
-  color: #6b0f1a;
-  padding: '2px';
+  color: #f87060;
+  padding: 2px;
 }
 
 .chartBars .chartBar.chartBarTypemainquery {
-  background: #324a5f;
+  background: #2e282a;
   color: white;
   font-weight: 500;
   text-align: left;
 }
 
-.chartBar:last-child {
-  border-top-left-radius: 3px;
-  border-bottom-left-radius: 3px;
-}
-
-.chartBar:first-child {
-  border-top-right-radius: 3px;
-  border-bottom-right-radius: 3px;
+.darkMode .chartBars .chartBar.chartBarTypemainquery {
+  background: #c0fdfb;
+  color: #000000;
 }
 
 .tracer button {
   margin-bottom: 0;
+}
+
+.tracer button.queryId {
+  text-transform: none;
 }
 
 .tracer .customFileUpload {
@@ -159,5 +158,34 @@ code {
 }
 
 .queryCompleted {
-  float: right;
+  margin-right: 2px;
+  padding: 2px;
+  color: #ffffff;
 }
+
+.darkMode .queryCompleted {
+  color: #ffffff;
+}
+
+.iconCircleBackground {
+  color: #000000;
+}
+
+.floatRight {
+  float: right;
+  height: 20px;
+}
+
+.errorMessage {
+  text-align: center;
+  margin: 20px;
+}
+
+.errorMessage .errorIcon {
+  color: #88292f;
+  margin-right: 5px;
+}
+
+/* .darkMode .iconCircleBackground {
+  color: #ffffff;
+} */

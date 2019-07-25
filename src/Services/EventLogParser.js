@@ -6,7 +6,8 @@ class EventLogParserService {
   data = { queries: {} }
 
   parseFileContent(content) {
-    const array = content.split('\n')
+    let array = content.split('\n\n')
+    array = array.map((line) => line.slice(6))
 
     return array.map((event) => {
       try {
@@ -39,7 +40,10 @@ class EventLogParserService {
         peers: [],
         seen: 0,
         queried: 0,
+        dialed: 0,
+        toDial: 0,
         toQuery: 0,
+        remaining: 0,
         peerDials: {},
         peerQueries: {},
         peerAdds: {},
@@ -61,7 +65,7 @@ class EventLogParserService {
     }
 
     ;[
-      'dup',
+      'duplicate',
       'filteredPeersNum',
       'closerPeersNum',
       'newPeersNum',
@@ -86,22 +90,29 @@ class EventLogParserService {
     const {
       PeersSeen,
       PeersQueried,
+      PeersDialedLen,
+      PeersDialedNew,
       PeersToQueryLen,
+      PeersRemainingLen,
       Query: { Key },
+      Result: { Success },
     } = queryRunner
     const query = this.data.queries[Key]
     query.seen = PeersSeen.length
     query.queried = PeersQueried.length
+    query.toDialed = PeersDialedLen
+    query.dialed = PeersDialedNew.length
     query.toQuery = PeersToQueryLen
+    query.remaining = PeersRemainingLen
     query.end = this.formatDate(time)
+    query.success = Success
     query.duration = new Date(query.end) - new Date(query.start)
   }
 
   finishedPeerDialAction(peerID, queryID, peerDial) {
-    const { duplicate, alreadyConnected, success, end, start } = peerDial
+    const { alreadyConnected, success, end, start } = peerDial
     this.findAndAddPeerAction(peerID, queryID, {
       type: 'dial',
-      dup: duplicate,
       alreadyConnected,
       success,
       duration: new Date(end) - new Date(start),
@@ -134,10 +145,11 @@ class EventLogParserService {
   }
 
   finishedPeerAddedAction(peerID, queryID, peerAdd) {
-    const { hops, xor, end, start } = peerAdd
+    const { duplicate, hops, xor, end, start } = peerAdd
     this.findAndAddPeerAction(peerID, queryID, {
       type: 'add',
       hops,
+      duplicate,
       xor,
       duration: new Date(end) - new Date(start),
       start: this.formatDate(start),
@@ -207,7 +219,7 @@ class EventLogParserService {
       peerQueryObject.filteredPeers = filteredPeers
       peerQueryObject.closerPeers = closerPeers
       peerQueryObject.newPeersNum = findNumNewPeers(peerQuery)
-      // not ideal but for now do this check in case end or result come in out of order
+      // for now do this check in case end or result come in out of order, maybe later update to return in queryRunnerResult
       if (peerQueryObject.end) {
         this.finishedPeerQueryAction(peerID, Key, peerQueryObject)
       }
@@ -225,9 +237,6 @@ class EventLogParserService {
     this.initializeQueryObject(Key, time)
     this.data.queries[Key].peerDials[peerID] = {}
     let peerDialObject = this.data.queries[Key].peerDials[peerID]
-    if (peerDialObject) {
-      peerDialObject.duplicate = true
-    }
     peerDialObject.start = time
   }
 
@@ -269,9 +278,6 @@ class EventLogParserService {
     this.initializeQueryObject(Key, time)
     this.data.queries[Key].peerDials[peerID] = {}
     const peerDialObject = this.data.queries[Key].peerDials[peerID]
-    if (peerDialObject) {
-      peerDialObject.duplicate = true
-    }
     peerDialObject.start = time
     peerDialObject.end = time
     peerDialObject.alreadyConnected = true
@@ -287,8 +293,12 @@ class EventLogParserService {
       Query: { Key },
     } = QueryRunner
     this.initializeQueryObject(Key, time)
-    this.data.queries[Key].peerAdds[peerID] = {}
-    const peerAddObject = this.data.queries[Key].peerAdds[peerID]
+    let peerAddObject = this.data.queries[Key].peerAdds[peerID]
+    if (this.data.queries[Key].peerAdds[peerID]) {
+      peerAddObject.duplicate = true
+    } else {
+      peerAddObject = {}
+    }
     peerAddObject.start = time
     peerAddObject.end = time
     peerAddObject.hops = Hops
@@ -307,12 +317,14 @@ class EventLogParserService {
   }
 
   processQueryRunnerEnd(runnerEnd) {
+    const { time, QueryRunner } = runnerEnd
     const {
       QueryRunner: {
         Query: { Key },
       },
     } = runnerEnd
-    this.processQueryRunnerStart(runnerEnd)
+    this.initializeQueryObject(Key, time)
+    this.updateQueryRunner(QueryRunner, time)
     this.data.queries[Key].queryCompleted = true
   }
 

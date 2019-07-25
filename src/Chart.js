@@ -2,11 +2,13 @@ import React, { Component } from 'react'
 import ReactTooltip from 'react-tooltip'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  faTimes,
-  faExclamationTriangle,
-  faCheck,
-  faCheckDouble,
+  faTimesCircle,
+  faExclamationCircle,
+  faCheckCircle,
+  faPowerOff,
+  faSpinner,
 } from '@fortawesome/free-solid-svg-icons'
+import { IconCircles } from './Components/IconCircles'
 
 const actionBarStyle = (action, data, windowWidth) => {
   const { startPos, endPos, width } = calculatePosByDates(
@@ -32,7 +34,7 @@ const afterBarStyle = (smallestRightMargin, windowWidth, barsWidth) => {
 }
 
 class Chart extends Component {
-  shouldComponentUpdate(nextProps, nextState) {
+  shouldComponentUpdate(nextProps) {
     const { queryId: nextQueryId, data: nextData } = nextProps
     const { queryId, data } = this.props
 
@@ -40,7 +42,7 @@ class Chart extends Component {
       return true
     }
 
-    if (data.queries[queryId].end !== nextData.queries[queryId].end) {
+    if (data.queries[queryId] !== nextData.queries[queryId]) {
       return true
     }
 
@@ -76,11 +78,21 @@ class Chart extends Component {
 class Query extends Component {
   render() {
     const { query, windowWidth } = this.props
-    const { peers, id, seen, queried, toQuery, queryCompleted } = query
+    const {
+      peers,
+      id,
+      seen,
+      queried,
+      toDial,
+      dialed,
+      toQuery,
+      remaining,
+      queryCompleted,
+      success,
+    } = query
     const barsWidth = windowWidth - 50
-    console.log('query is', query)
 
-    const label = `Query ${id.toUpperCase()}`
+    const label = `Query ${id}`
     const style = actionBarStyle(query, query, barsWidth)
     const styleAfterBar = afterBarStyle(
       style.marginRight,
@@ -108,12 +120,36 @@ class Query extends Component {
               style={style}
               data-tip={`Query duration: ${query.duration}ms`}
             >
-              {`Seen: ${seen}, Queried: ${queried}, To Query: ${toQuery}`}
-              {queryCompleted && (
-                <FontAwesomeIcon
-                  data-tip="queryCompleted"
-                  icon={faCheckDouble}
-                  className="queryCompleted"
+              {`Seen: ${seen}, Queried: ${queried}, Dialed: ${dialed}, To Dial: ${toDial}, To Query: ${toQuery}, Remaining: ${remaining}`}
+              {queryCompleted ? (
+                <IconCircles
+                  icon={faPowerOff}
+                  outlineClass="queryCompleted"
+                  dataTipText="query completed"
+                  floatRight
+                />
+              ) : (
+                <IconCircles
+                  icon={faSpinner}
+                  outlineClass="queryCompleted"
+                  dataTipText="query pending"
+                  floatRight
+                />
+              )}
+              {queryCompleted && success && (
+                <IconCircles
+                  icon={faCheckCircle}
+                  outlineClass="queryCompleted"
+                  dataTipText="success"
+                  floatRight
+                />
+              )}
+              {queryCompleted && !success && (
+                <IconCircles
+                  icon={faTimesCircle}
+                  outlineClass="queryCompleted"
+                  dataTipText="failed"
+                  floatRight
                 />
               )}
             </div>
@@ -139,7 +175,7 @@ class Peer extends Component {
     const { peer, query, windowWidth } = this.props
     const { id, filteredPeersNum, closerPeersNum, newPeersNum } = peer
     const barsWidth = windowWidth - 50
-    const label = `Peer ${id.toUpperCase()}`
+    const label = `Peer ${id}`
     let smallestRightMargin = barsWidth
     let totalDuration = 0
 
@@ -147,11 +183,11 @@ class Peer extends Component {
       <div className="chartRow">
         <div className="chartLabel">{label}</div>
         <div className="chartMiniColumn">
-          {peer.dup && (
-            <FontAwesomeIcon
-              data-tip="duplicate"
-              icon={faExclamationTriangle}
-              className="duplicateExclamation"
+          {peer.duplicate && (
+            <IconCircles
+              icon={faExclamationCircle}
+              outlineClass="duplicateExclamation"
+              dataTipText="duplicate"
             />
           )}
         </div>
@@ -183,30 +219,30 @@ class Peer extends Component {
                 }`}
               >
                 {action.type === 'dial' && !action.success && (
-                  <FontAwesomeIcon
-                    data-tip="dial-failure"
-                    icon={faTimes}
-                    className="dialFailure"
+                  <IconCircles
+                    icon={faTimesCircle}
+                    outlineClass="dialFailure"
+                    dataTipText="dail failure"
                   />
                 )}
                 {action.type === 'query' && action.success && (
-                  <FontAwesomeIcon
-                    data-tip="records found"
-                    icon={faCheck}
-                    className="recordsFound"
+                  <IconCircles
+                    icon={faCheckCircle}
+                    outlineClass="recordsFound"
+                    dataTipText="records found"
                   />
                 )}
               </div>
             )
           })}
           <div
-            data-tip="total duration # closer peers / # filtered peers / # new peers"
+            data-tip="total duration # new peers / # filtered peers / # closer peers"
             className="chartBar chartBarAfterDescription"
             style={afterBarStyle(smallestRightMargin, windowWidth, barsWidth)}
           >
             {`${totalDuration}ms`}{' '}
             {closerPeersNum
-              ? `${closerPeersNum}/${filteredPeersNum}/${newPeersNum}`
+              ? `${newPeersNum}/${filteredPeersNum}/${closerPeersNum}`
               : ''}
           </div>
         </div>
