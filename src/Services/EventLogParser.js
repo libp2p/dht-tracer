@@ -338,7 +338,6 @@ class EventLogParserService {
     const {
       Query: { Key },
     } = QueryRunner
-    console.log('peer added', this.data.queries[Key].peerAdds[peerID])
     this.initializeQueryObject(Key, time)
     if (this.data.queries[Key].peerAdds[peerID]) {
       this.data.queries[Key].peerAdds[peerID].duplicate = true
@@ -420,9 +419,7 @@ class EventLogParserService {
     for (const eventLog of this.formattedArray) {
       this.formatNewEvent(eventLog)
     }
-
-    console.log('data is', this.data)
-
+    
     return this.data
   }
 }
