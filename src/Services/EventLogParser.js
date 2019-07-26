@@ -68,12 +68,22 @@ class EventLogParserService {
         id: peerID,
         actions: [],
       }
-      // this.data.queries[queryID].peers.push(foundPeer)
       // use update for non-helper mutations that should affect view
       this.data = update(this.data, {
         queries: { [queryID]: { peers: { $push: [foundPeer] } } },
       })
       foundPeerIndex = this.data.queries[queryID].peers.length - 1
+    }
+    // update xor and hops of query with vals of successful peer query
+    if (peerData.type === 'query' && peerData.success) {
+      const { xor, hops } = this.data.queries[queryID].peers[foundPeerIndex]
+      this.data = update(this.data, {
+        queries: {
+          [queryID]: {
+            $merge: { xor, hops },
+          },
+        },
+      })
     }
 
     ;[
@@ -93,15 +103,14 @@ class EventLogParserService {
           },
         },
       })
-      // foundPeer[key] = peerData[key]
     })
-    const newPeerAction = {
-      type: peerData.type,
-      start: peerData.start,
-      end: peerData.end,
-      duration: peerData.duration,
-      success: peerData.success,
-    }
+    const newPeerAction = (({ type, start, end, duration, success }) => ({
+      type,
+      start,
+      end,
+      duration,
+      success,
+    }))(peerData)
     this.data = update(this.data, {
       queries: {
         [queryID]: {

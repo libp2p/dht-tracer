@@ -8,7 +8,7 @@ import {
   faPowerOff,
   faSpinner,
 } from '@fortawesome/free-solid-svg-icons'
-import { IconCircles } from './Components/IconCircles'
+import { IconCircles } from '../IconCircles'
 
 const actionBarStyle = (action, data, windowWidth) => {
   const { startPos, endPos, width } = calculatePosByDates(
@@ -89,6 +89,8 @@ class Query extends Component {
       remaining,
       queryCompleted,
       success,
+      xor,
+      hops,
     } = query
     const barsWidth = windowWidth - 50
 
@@ -120,8 +122,8 @@ class Query extends Component {
         <div className="chartRow headerRow">
           <div className="chartLabel">{label}</div>
           <div className="chartMiniColumn" />
-          <div className="chartMiniColumn">xor</div>
-          <div className="chartMiniColumn">hops</div>
+          <div className="chartMiniColumn">{xor}</div>
+          <div className="chartMiniColumn">{hops}</div>
           <div className="chartBars query" style={{ width: windowWidth }}>
             <div
               key={id}

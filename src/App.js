@@ -4,7 +4,7 @@ import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheckCircle, faMoon } from '@fortawesome/free-solid-svg-icons'
 import './App.css'
-import { Chart } from './Chart'
+import { Chart } from './Components/Chart'
 import { ErrorMessage } from './Components/ErrorMessage'
 import { EventLogParser } from './Services/EventLogParser'
 
@@ -238,37 +238,42 @@ class App extends Component {
               ))}
           </div>
         )}
-        {!data && (
-          <div className="startOptions">
-            <div className="row center">
-              <label htmlFor="file-upload" className="customFileUpload">
-                CHOOSE FILE
-              </label>
-              <input
-                type="file"
-                id="file-upload"
-                className="inputfile"
-                onChange={(e) => this.handleFileChosen(e.target.files[0])}
-              />
-            </div>
-            <div>-or-</div>
 
-            <div className="inputRow">
-              <div className="mainInput">
+        <div className="startOptions">
+          {!data && (
+            <>
+              <div className="row center">
+                <label htmlFor="file-upload" className="customFileUpload">
+                  CHOOSE FILE
+                </label>
                 <input
-                  disabled={readingStream}
-                  type="text"
-                  value={loggingEndpoint}
-                  onChange={this.changeLoggingEndpoint}
+                  type="file"
+                  id="file-upload"
+                  className="inputfile"
+                  onChange={(e) => this.handleFileChosen(e.target.files[0])}
                 />
               </div>
-              <button onClick={this.readStream} disabled={readingStream}>
-                {readingStream
-                  ? 'Reading from stream at localhost:7000/events'
-                  : 'Read from stream'}
-              </button>
-            </div>
+              <div>-or-</div>
 
+              <div className="inputRow">
+                <div className="mainInput">
+                  <input
+                    disabled={readingStream}
+                    type="text"
+                    value={loggingEndpoint}
+                    onChange={this.changeLoggingEndpoint}
+                  />
+                </div>
+                <button onClick={this.readStream} disabled={readingStream}>
+                  {readingStream
+                    ? 'Reading from stream at localhost:7000/events'
+                    : 'Read from stream'}
+                </button>
+              </div>
+            </>
+          )}
+
+          {(readingStream || !data) && (
             <div className="inputRow">
               <div className="selectInput">
                 <select value={command} onChange={this.changeCommand}>
@@ -293,28 +298,28 @@ class App extends Component {
                   placeholder={commandArgExplanation}
                 />
               </div>
-              <button onClick={this.query} disabled={sendingQuery}>
+              <button onClick={this.query} disabled={sendingQuery || !command}>
                 Query
               </button>
             </div>
-            {!readingStream && ranQuery && (
-              <ErrorMessage warning>
-                <div>
-                  If you run queries here without first reading from the event
-                  logs, you won't see them visualized here.
-                </div>
-              </ErrorMessage>
-            )}
-            {queryError && (
-              <ErrorMessage>
-                <div>
-                  There was an error running your query, please check that your
-                  arguments are formatted properly.
-                </div>
-              </ErrorMessage>
-            )}
-          </div>
-        )}
+          )}
+          {!readingStream && ranQuery && (
+            <ErrorMessage warning>
+              <div>
+                If you run queries here without first reading from the event
+                logs, you won't see them visualized here.
+              </div>
+            </ErrorMessage>
+          )}
+          {queryError && (
+            <ErrorMessage>
+              <div>
+                There was an error running your query, please check that your
+                arguments are formatted properly.
+              </div>
+            </ErrorMessage>
+          )}
+        </div>
 
         <div className={'my-pretty-chart-container'}>
           {data && queryId && (
