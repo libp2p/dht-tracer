@@ -126,7 +126,7 @@ class EventLogParserService {
     const {
       PeersSeen,
       PeersQueried,
-      PeersDialedLen,
+      PeersDialQueueLen,
       PeersDialedNew,
       PeersToQueryLen,
       PeersRemainingLen,
@@ -137,7 +137,7 @@ class EventLogParserService {
     const updatedQueryRunnerData = {
       seen: PeersSeen.length,
       queried: PeersQueried.length,
-      toDialed: PeersDialedLen,
+      toDial: PeersDialQueueLen,
       dialed: PeersDialedNew.length,
       toQuery: PeersToQueryLen,
       remaining: PeersRemainingLen,
@@ -174,7 +174,6 @@ class EventLogParserService {
       success,
       end,
       start,
-      duplicate,
     } = peerQuery
     const filteredPeersNum = filteredPeers ? filteredPeers.length : 0
     const closerPeersNum = closerPeers ? closerPeers.length : 0
@@ -184,7 +183,6 @@ class EventLogParserService {
       closerPeersNum,
       newPeersNum,
       success,
-      duplicate,
       duration: new Date(end) - new Date(start),
       start: this.formatDate(start),
       end: this.formatDate(end),
@@ -213,13 +211,8 @@ class EventLogParserService {
       },
     } = peerQuery
     this.initializeQueryObject(Key, time)
-    let peerQueryObject = this.data.queries[Key].peerQueries[peerID]
-    if (this.data.queries[Key].peerQueries[peerID]) {
-      peerQueryObject.duplicate = true
-    } else {
-      peerQueryObject = {}
-    }
-    peerQueryObject.start = time
+    this.data.queries[Key].peerQueries[peerID] = {}
+    this.data.queries[Key].peerQueries[peerID].start = time
   }
 
   processPeerQueryEnd(peerQuery) {
@@ -345,8 +338,12 @@ class EventLogParserService {
       Query: { Key },
     } = QueryRunner
     this.initializeQueryObject(Key, time)
-    this.data.queries[Key].peerAdds[peerID] = {}
-    const peerAddObject = this.data.queries[Key].peerAdds[peerID]
+    let peerAddObject = this.data.queries[Key].peerAdds[peerID]
+    if (this.data.queries[Key].peerAdds[peerID]) {
+      peerAddObject.duplicate = true
+    } else {
+      peerAddObject = {}
+    }
     peerAddObject.start = time
     peerAddObject.end = time
     peerAddObject.hops = Hops
