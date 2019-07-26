@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon'
+import update from 'immutability-helper'
 
 class EventLogParserService {
   formattedArray = []
@@ -32,36 +33,47 @@ class EventLogParserService {
 
   initializeQueryObject(id, time) {
     if (!this.data.queries[id]) {
-      this.data.queries[id] = {
-        id,
-        start: this.formatDate(time),
-        end: this.formatDate(time),
-        duration: 0,
-        peers: [],
-        seen: 0,
-        queried: 0,
-        dialed: 0,
-        toDial: 0,
-        toQuery: 0,
-        remaining: 0,
-        peerDials: {},
-        peerQueries: {},
-        peerAdds: {},
-        queryCompleted: false,
-      }
+      this.data = update(this.data, {
+        queries: {
+          [id]: {
+            $set: {
+              id,
+              start: this.formatDate(time),
+              end: this.formatDate(time),
+              duration: 0,
+              peers: [],
+              seen: 0,
+              queried: 0,
+              dialed: 0,
+              toDial: 0,
+              toQuery: 0,
+              remaining: 0,
+              peerDials: {},
+              peerQueries: {},
+              peerAdds: {},
+              queryCompleted: false,
+            },
+          },
+        },
+      })
     }
   }
 
   findAndAddPeerAction = (peerID, queryID, peerData) => {
-    let foundPeer = this.data.queries[queryID].peers.find(
+    let foundPeerIndex = this.data.queries[queryID].peers.findIndex(
       (p) => p.id === peerID,
     )
-    if (!foundPeer) {
-      foundPeer = {
+    if (foundPeerIndex === -1) {
+      const foundPeer = {
         id: peerID,
         actions: [],
       }
-      this.data.queries[queryID].peers.push(foundPeer)
+      // this.data.queries[queryID].peers.push(foundPeer)
+      // use update for non-helper mutations that should affect view
+      this.data = update(this.data, {
+        queries: { [queryID]: { peers: { $push: [foundPeer] } } },
+      })
+      foundPeerIndex = this.data.queries[queryID].peers.length - 1
     }
 
     ;[
@@ -74,15 +86,30 @@ class EventLogParserService {
       'alreadyConnected',
     ].forEach((key) => {
       if (!(key in peerData)) return
-      foundPeer[key] = peerData[key]
+      this.data = update(this.data, {
+        queries: {
+          [queryID]: {
+            peers: { [foundPeerIndex]: { [key]: { $set: peerData[key] } } },
+          },
+        },
+      })
+      // foundPeer[key] = peerData[key]
     })
-
-    foundPeer.actions.push({
+    const newPeerAction = {
       type: peerData.type,
       start: peerData.start,
       end: peerData.end,
       duration: peerData.duration,
       success: peerData.success,
+    }
+    this.data = update(this.data, {
+      queries: {
+        [queryID]: {
+          peers: {
+            [foundPeerIndex]: { actions: { $push: [newPeerAction] } },
+          },
+        },
+      },
     })
   }
 
@@ -98,15 +125,24 @@ class EventLogParserService {
       Result: { Success },
     } = queryRunner
     const query = this.data.queries[Key]
-    query.seen = PeersSeen.length
-    query.queried = PeersQueried.length
-    query.toDialed = PeersDialedLen
-    query.dialed = PeersDialedNew.length
-    query.toQuery = PeersToQueryLen
-    query.remaining = PeersRemainingLen
-    query.end = this.formatDate(time)
-    query.success = Success
-    query.duration = new Date(query.end) - new Date(query.start)
+    const updatedQueryRunnerData = {
+      seen: PeersSeen.length,
+      queried: PeersQueried.length,
+      toDialed: PeersDialedLen,
+      dialed: PeersDialedNew.length,
+      toQuery: PeersToQueryLen,
+      remaining: PeersRemainingLen,
+      end: this.formatDate(time),
+      success: Success,
+      duration: new Date(this.formatDate(time)) - new Date(query.start),
+    }
+    this.data = update(this.data, {
+      queries: {
+        [Key]: {
+          $merge: updatedQueryRunnerData,
+        },
+      },
+    })
   }
 
   finishedPeerDialAction(peerID, queryID, peerDial) {
@@ -325,7 +361,9 @@ class EventLogParserService {
     } = runnerEnd
     this.initializeQueryObject(Key, time)
     this.updateQueryRunner(QueryRunner, time)
-    this.data.queries[Key].queryCompleted = true
+    this.data = update(this.data, {
+      queries: { [Key]: { queryCompleted: { $set: true } } },
+    })
   }
 
   formatNewEvent(eventLog) {

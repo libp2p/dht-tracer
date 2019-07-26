@@ -14,6 +14,7 @@ code {
 
 .darkMode {
   background: #0d1316;
+  color: #d3d3d3;
 }
 
 .darkMode .chartRow {
@@ -22,7 +23,7 @@ code {
 
 .chartRow {
   border-bottom: 1px solid #444444;
-  padding: 5px 8px;
+  padding: 0px 8px;
 }
 
 .headerRow {
@@ -40,7 +41,7 @@ code {
 
 .chartMiniColumn {
   display: inline-block;
-  width: 50px;
+  width: 40px;
   line-height: 40px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -52,7 +53,6 @@ code {
   display: inline-block;
   height: 40px;
   padding-top: 10px;
-  padding-bottom: 10px;
   position: relative;
 }
 
@@ -66,6 +66,7 @@ code {
 
 .chartBarAfterDescription {
   padding-left: 5px;
+  white-space: nowrap;
 }
 
 .darkMode .chartBarTypedial {
@@ -186,6 +187,41 @@ code {
   margin-right: 5px;
 }
 
-/* .darkMode .iconCircleBackground {
-  color: #ffffff;
-} */
+.errorMessage .warningIcon {
+  color: #d78521;
+  margin-right: 5px;
+}
+
+.flex-row {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  justify-content: space-around;
+}
+
+.nightMode {
+  height: 60px;
+}
+
+.mainInput {
+  width: 400px;
+}
+
+.selectInput {
+  width: 200px;
+}
+
+.startOptions {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.inputRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 15px;
+}

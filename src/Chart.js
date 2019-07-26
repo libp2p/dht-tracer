@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import ReactTooltip from 'react-tooltip'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { FixedSizeList as List } from 'react-window'
 import {
   faTimesCircle,
   faExclamationCircle,
@@ -99,6 +99,15 @@ class Query extends Component {
       windowWidth,
       barsWidth,
     )
+    const PeerRow = ({ index, style }) => (
+      <Peer
+        style={style}
+        key={index}
+        peer={peers[index]}
+        query={query}
+        windowWidth={windowWidth}
+      />
+    )
 
     return (
       <>
@@ -113,7 +122,7 @@ class Query extends Component {
           <div className="chartMiniColumn" />
           <div className="chartMiniColumn">xor</div>
           <div className="chartMiniColumn">hops</div>
-          <div className="chartBars" style={{ width: windowWidth }}>
+          <div className="chartBars query" style={{ width: windowWidth }}>
             <div
               key={id}
               className={`chartBar chartBarTypemainquery`}
@@ -162,9 +171,18 @@ class Query extends Component {
             </div>
           </div>
         </div>
-        {peers.map((peer, key) => (
-          <Peer key={key} peer={peer} query={query} windowWidth={windowWidth} />
-        ))}
+        <List
+          height={window.innerHeight}
+          itemCount={peers.length}
+          width={window.innerWidth}
+          itemSize={40}
+        >
+          {PeerRow}
+        </List>
+        {/* comment out list and uncomment map below to view without windowing, scrolling feels faster, but might cause rerendering to be very slow with very long peer lists */}
+        {/* {peers.map((peer, key) => (
+           <Peer key={key} peer={peer} query={query} windowWidth={windowWidth} />
+        ))} */}
       </>
     )
   }
@@ -172,7 +190,7 @@ class Query extends Component {
 
 class Peer extends Component {
   render() {
-    const { peer, query, windowWidth } = this.props
+    const { peer, query, windowWidth, style } = this.props
     const { id, filteredPeersNum, closerPeersNum, newPeersNum } = peer
     const barsWidth = windowWidth - 50
     const label = `Peer ${id}`
@@ -180,7 +198,7 @@ class Peer extends Component {
     let totalDuration = 0
 
     return (
-      <div className="chartRow">
+      <div className="chartRow" style={style}>
         <div className="chartLabel">{label}</div>
         <div className="chartMiniColumn">
           {peer.duplicate && (
