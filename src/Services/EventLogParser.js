@@ -333,17 +333,19 @@ class EventLogParserService {
   }
 
   processPeerAdded(peerAdd) {
+    
     const { peerID, time, Hops, XOR, QueryRunner } = peerAdd
     const {
       Query: { Key },
     } = QueryRunner
+    console.log('peer added', this.data.queries[Key].peerAdds[peerID])
     this.initializeQueryObject(Key, time)
-    let peerAddObject = this.data.queries[Key].peerAdds[peerID]
     if (this.data.queries[Key].peerAdds[peerID]) {
-      peerAddObject.duplicate = true
+      this.data.queries[Key].peerAdds[peerID].duplicate = true
     } else {
-      peerAddObject = {}
+      this.data.queries[Key].peerAdds[peerID] = {}
     }
+    const peerAddObject = this.data.queries[Key].peerAdds[peerID]
     peerAddObject.start = time
     peerAddObject.end = time
     peerAddObject.hops = Hops
