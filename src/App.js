@@ -72,8 +72,10 @@ class App extends Component {
     let commandArgExplanation
     switch (command) {
       case 'put-value':
-      case 'get-value':
         commandArgExplanation = '<key> <value>'
+        break
+      case 'get-value':
+        commandArgExplanation = '<key>'
         break
       case 'add-provider':
       case 'get-providers':
