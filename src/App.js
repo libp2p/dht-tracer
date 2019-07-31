@@ -184,7 +184,6 @@ class App extends Component {
       sendingQuery,
     } = this.state
 
-    console.log('data is', data)
     if (data && data.queries && !queryId) {
       queryId = Object.keys(data.queries)[0]
     }
