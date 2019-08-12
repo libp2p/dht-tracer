@@ -7,6 +7,7 @@ import './App.css'
 import { Chart } from './Components/Chart'
 import { ErrorMessage } from './Components/ErrorMessage'
 import { EventLogParser } from './Services/EventLogParser'
+//import { digestMessage } from './utils'
 
 let fileReader
 const windowWidth = window.innerWidth - 300
@@ -112,18 +113,18 @@ class App extends Component {
       })
   }
 
-  handleFileChosen = (file) => {
+  handleFileChosen = async (file) => {
     fileReader = new FileReader()
-    fileReader.onloadend = this.handleFileRead
+    fileReader.onloadend = await this.handleFileRead
     fileReader.readAsText(file)
   }
 
-  handleFileRead = (e) => {
+  handleFileRead = async (e) => {
     // TODO: reject random files
     const content = fileReader.result
     try {
       this.formattedArray = EventLogParser.parseFileContent(content)
-      this.identifyFirstQuery()
+      await this.identifyFirstQuery()
       this.filterData()
     } catch (e) {
       console.log('error', e)
@@ -131,14 +132,15 @@ class App extends Component {
     }
   }
 
-  identifyFirstQuery = () => {
+  identifyFirstQuery = async () => {
     // use the dhtQueryRunner.Run.Start event to identify which queries are present in the file
     const queryStart = this.formattedArray.filter(
       (event) => event.event === 'dhtQueryRunner.Run.Start',
     )
     // initially show the first query that was started within the file
 
-    const queryId = queryStart[0].QueryRunner.Query.Key
+    //const queryId = await digestMessage(queryStart[0].queryrunner.Query.Key + queryStart[0].queryrunner.start)
+    const queryId = queryStart[0].queryrunner.Query.Key
     this.setState({ queryId })
   }
 
@@ -228,7 +230,7 @@ class App extends Component {
                   className={`queryId ${queryId === key && 'selected'}`}
                   key={key}
                 >
-                  {key}
+                  {data.queries[key].QueryRunner.Key}
                   {key === queryId && (
                     <FontAwesomeIcon
                       icon={faCheckCircle}
