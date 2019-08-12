@@ -339,7 +339,7 @@ class EventLogParserService {
       Query: { Key },
     } = QueryRunner
     this.initializeQueryObject(Key, time)
-    if (this.data.queries[Key].peerAdds[peerID]) {
+    if (this.data.queries[Key].peerAdds[peerID] && this.data.queries[Key].peerAdds[peerID].start === time) {
       this.data.queries[Key].peerAdds[peerID].duplicate = true
     } else {
       this.data.queries[Key].peerAdds[peerID] = {}

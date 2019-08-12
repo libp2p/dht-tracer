@@ -19,9 +19,9 @@ const actionBarStyle = (action, data, windowWidth) => {
     new Date(windowWidth),
   )
   const barStyle = {
-    marginLeft: startPos,
-    marginRight: endPos,
-    width: width,
+    marginLeft: startPos || 0,
+    marginRight: endPos || 0,
+    width: width || 0,
   }
 
   return barStyle
@@ -29,7 +29,7 @@ const actionBarStyle = (action, data, windowWidth) => {
 
 const afterBarStyle = (smallestRightMargin, windowWidth, barsWidth) => {
   return {
-    marginLeft: barsWidth - smallestRightMargin,
+    marginLeft: barsWidth - (smallestRightMargin || 0),
   }
 }
 
@@ -97,7 +97,7 @@ class Query extends Component {
     const label = `Query ${id}`
     const style = actionBarStyle(query, query, barsWidth)
     const styleAfterBar = afterBarStyle(
-      style.marginRight,
+      style.marginRight || 0,
       windowWidth,
       barsWidth,
     )
@@ -221,7 +221,7 @@ class Peer extends Component {
           {peer.actions.map((action, key) => {
             const style = actionBarStyle(action, query, barsWidth)
             if (style.marginRight < smallestRightMargin) {
-              smallestRightMargin = style.marginRight
+              smallestRightMargin = style.marginRight || 0
             }
             totalDuration += action.duration
 
@@ -258,7 +258,7 @@ class Peer extends Component {
           <div
             data-tip="total duration # new peers / # filtered peers / # closer peers"
             className="chartBar chartBarAfterDescription"
-            style={afterBarStyle(smallestRightMargin, windowWidth, barsWidth)}
+            style={afterBarStyle(smallestRightMargin || 0, windowWidth, barsWidth)}
           >
             {`${totalDuration}ms`}{' '}
             {closerPeersNum
