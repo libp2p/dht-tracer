@@ -42,7 +42,7 @@ class App extends Component {
     source.addEventListener(
       'error',
       (e) => {
-        console.log('error', e)
+        console.error('error', e)
         source.close()
         this.setState({ streamingError: true, readingStream: false })
       },
@@ -109,38 +109,37 @@ class App extends Component {
       })
       .catch((e) => {
         this.setState({ queryError: true, sendingQuery: false })
-        console.log('query error', e)
+        console.error('query error', e)
       })
   }
 
-  handleFileChosen = async (file) => {
+  handleFileChosen = (file) => {
     fileReader = new FileReader()
-    fileReader.onloadend = await this.handleFileRead
+    fileReader.onloadend = this.handleFileRead
     fileReader.readAsText(file)
   }
 
-  handleFileRead = async (e) => {
+  handleFileRead = (e) => {
     // TODO: reject random files
     const content = fileReader.result
     try {
       this.formattedArray = EventLogParser.parseFileContent(content)
-      await this.identifyFirstQuery()
+      this.identifyFirstQuery()
       this.filterData()
     } catch (e) {
-      console.log('error', e)
+      console.error('error', e)
       this.setState({ fileReadError: true })
     }
   }
 
-  identifyFirstQuery = async () => {
+  identifyFirstQuery = () => {
     // use the dhtQueryRunner.Run.Start event to identify which queries are present in the file
     const queryStart = this.formattedArray.filter(
       (event) => event.event === 'dhtQueryRunner.Run.Start',
     )
-    // initially show the first query that was started within the file
 
-    //const queryId = await digestMessage(queryStart[0].queryrunner.Query.Key + queryStart[0].queryrunner.start)
-    const queryId = queryStart[0].queryrunner.Query.Key
+    // initially show the first query that was started within the file
+    const queryId = queryStart[0].QueryRunner.Query.Key + ' @ ' + queryStart[0].QueryRunner.StartTime
     this.setState({ queryId })
   }
 
@@ -230,7 +229,7 @@ class App extends Component {
                   className={`queryId ${queryId === key && 'selected'}`}
                   key={key}
                 >
-                  {data.queries[key].QueryRunner.Key}
+                  {key}
                   {key === queryId && (
                     <FontAwesomeIcon
                       icon={faCheckCircle}

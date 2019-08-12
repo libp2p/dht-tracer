@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon'
 import update from 'immutability-helper'
-import { digestMessage } from '../utils'
+//import { digestMessage } from '../utils'
 
 class EventLogParserService {
   formattedArray = []
@@ -123,7 +123,7 @@ class EventLogParserService {
     })
   }
 
-  updateQueryRunner = async (queryRunner, time) => {
+  updateQueryRunner = (queryRunner, time) => {
     const {
       PeersSeen,
       PeersQueried,
@@ -135,8 +135,7 @@ class EventLogParserService {
       Result: { Success },
     } = queryRunner
 
-    //const queryId = await digestMessage(Key + time)
-    const queryId = Key
+    const queryId = Key + ' @ ' + queryRunner.StartTime
 
     const query = this.data.queries[queryId]
     const updatedQueryRunnerData = {
@@ -207,7 +206,7 @@ class EventLogParserService {
     })
   }
 
-  processPeerQueryStart = async (peerQuery) => {
+  processPeerQueryStart = (peerQuery) => {
     const {
       peerID,
       time,
@@ -216,22 +215,20 @@ class EventLogParserService {
       },
     } = peerQuery
 
-    //const queryId = await digestMessage(Key + time)
-    const queryId = Key
+    const queryId = Key + ' @ ' + peerQuery.QueryRunner.StartTime
 
     this.initializeQueryObject(queryId, time)
     this.data.queries[queryId].peerQueries[peerID] = {}
     this.data.queries[queryId].peerQueries[peerID].start = time
   }
 
-  processPeerQueryEnd = async (peerQuery) => {
+  processPeerQueryEnd = (peerQuery) => {
     const { peerID, time, QueryRunner } = peerQuery
     const {
       Query: { Key },
     } = QueryRunner
 
-    //const queryId = await digestMessage(Key + time)
-    const queryId = Key
+    const queryId = Key + ' @ ' + peerQuery.QueryRunner.StartTime
 
     const peerQueryObject =
       this.data.queries[queryId] && this.data.queries[queryId].peerQueries[peerID]
@@ -239,12 +236,12 @@ class EventLogParserService {
       peerQueryObject.end = time
       if (peerQueryObject.closerPeers || peerQueryObject.success) {
         this.finishedPeerQueryAction(peerID, queryId, peerQueryObject)
-        await this.updateQueryRunner(QueryRunner, time)
+        this.updateQueryRunner(QueryRunner, time)
       }
     }
   }
 
-  processPeerQueryResult = async (peerQuery) => {
+  processPeerQueryResult = (peerQuery) => {
     const findNumNewPeers = (peerQuery) => {
       const {
         filteredPeers,
@@ -266,14 +263,12 @@ class EventLogParserService {
       success,
       filteredPeers,
       closerPeers,
-      time,
       QueryRunner: {
         Query: { Key },
       },
     } = peerQuery
 
-    //const queryId = await digestMessage(Key + time)
-    const queryId = Key
+    const queryId = Key + ' @ ' + peerQuery.QueryRunner.StartTime
 
     const peerQueryObject =
       this.data.queries[queryId] && this.data.queries[queryId].peerQueries[peerID]
@@ -289,7 +284,7 @@ class EventLogParserService {
     }
   }
 
-  processDialPeerDialing = async (peerDial) => {
+  processDialPeerDialing = (peerDial) => {
     const {
       peerID,
       time,
@@ -298,8 +293,7 @@ class EventLogParserService {
       },
     } = peerDial
 
-    //const queryId = await digestMessage(Key + time)
-    const queryId = Key
+    const queryId = Key + ' @ ' + peerDial.QueryRunner.StartTime
 
     this.initializeQueryObject(queryId, time)
     this.data.queries[queryId].peerDials[peerID] = {}
@@ -307,14 +301,13 @@ class EventLogParserService {
     peerDialObject.start = time
   }
 
-  processDialPeerFailure = async (peerDial) => {
+  processDialPeerFailure = (peerDial) => {
     const { peerID, time, QueryRunner } = peerDial
     const {
       Query: { Key },
     } = QueryRunner
 
-    //const queryId = await digestMessage(Key + time)
-    const queryId = Key
+    const queryId = Key + ' @ ' + peerDial.QueryRunner.StartTime
 
     const peerDialObject =
       this.data.queries[queryId] && this.data.queries[queryId].peerDials[peerID]
@@ -322,18 +315,17 @@ class EventLogParserService {
       peerDialObject.end = time
       peerDialObject.success = false
       this.finishedPeerDialAction(peerID, queryId, peerDialObject)
-      await this.updateQueryRunner(QueryRunner, time)
+      this.updateQueryRunner(QueryRunner, time)
     }
   }
 
-  processDialPeerSuccess = async (peerDial) => {
+  processDialPeerSuccess = (peerDial) => {
     const { peerID, time, QueryRunner } = peerDial
     const {
       Query: { Key },
     } = QueryRunner
 
-    //const queryId = await digestMessage(Key + time)
-    const queryId = Key
+    const queryId = Key + ' @ ' + peerDial.QueryRunner.StartTime
 
     const peerDialObject =
       this.data.queries[queryId] && this.data.queries[queryId].peerDials[peerID]
@@ -341,18 +333,17 @@ class EventLogParserService {
       peerDialObject.end = time
       peerDialObject.success = true
       this.finishedPeerDialAction(peerID, queryId, peerDialObject)
-      await this.updateQueryRunner(QueryRunner, time)
+      this.updateQueryRunner(QueryRunner, time)
     }
   }
 
-  processDialPeerAlreadyConencted = async (peerDial) => {
+  processDialPeerAlreadyConencted = (peerDial) => {
     const { peerID, time, XOR, QueryRunner } = peerDial
     const {
       Query: { Key },
     } = QueryRunner
 
-    //const queryId = await digestMessage(Key + time)
-    const queryId = Key
+    const queryId = Key + ' @ ' + peerDial.QueryRunner.StartTime
 
     this.initializeQueryObject(queryId, time)
     this.data.queries[queryId].peerDials[peerID] = {}
@@ -366,14 +357,13 @@ class EventLogParserService {
     this.updateQueryRunner(QueryRunner, time)
   }
 
-  processPeerAdded = async (peerAdd) => {
+  processPeerAdded = (peerAdd) => {
     const { peerID, time, Hops, XOR, QueryRunner } = peerAdd
     const {
       Query: { Key },
     } = QueryRunner
 
-    //const queryId = await digestMessage(Key + time)
-    const queryId = Key
+    const queryId = Key + ' @ ' + peerAdd.QueryRunner.StartTime
 
     this.initializeQueryObject(queryId, time)
     if (this.data.queries[queryId].peerAdds[peerID] && this.data.queries[queryId].peerAdds[peerID].start === time) {
@@ -387,23 +377,22 @@ class EventLogParserService {
     peerAddObject.hops = Hops
     peerAddObject.xor = XOR
     this.finishedPeerAddedAction(peerID, queryId, peerAddObject)
-    await this.updateQueryRunner(QueryRunner, time)
+    this.updateQueryRunner(QueryRunner, time)
   }
 
-  processQueryRunnerStart = async (runnerStart) => {
+  processQueryRunnerStart = (runnerStart) => {
     const { time, QueryRunner } = runnerStart
     const {
       Query: { Key },
     } = QueryRunner
 
-    //const queryId = await digestMessage(Key + time)
-    const queryId = await digestMessage(Key + time)
+    const queryId = Key + ' @ ' + runnerStart.QueryRunner.StartTime
 
     this.initializeQueryObject(queryId, time)
-    await this.updateQueryRunner(QueryRunner, time)
+    this.updateQueryRunner(QueryRunner, time)
   }
 
-  processQueryRunnerEnd = async (runnerEnd) => {
+  processQueryRunnerEnd = (runnerEnd) => {
     const { time, QueryRunner } = runnerEnd
     const {
       QueryRunner: {
@@ -411,48 +400,47 @@ class EventLogParserService {
       },
     } = runnerEnd
 
-    //const queryId = await digestMessage(Key + time)
-    const queryId = Key
+    const queryId = Key + ' @ ' + runnerEnd.QueryRunner.StartTime
 
     this.initializeQueryObject(queryId, time)
-    await this.updateQueryRunner(QueryRunner, time)
+    this.updateQueryRunner(QueryRunner, time)
     this.data = update(this.data, {
       queries: { [queryId]: { queryCompleted: { $set: true } } },
     })
   }
 
-  formatNewEvent = async (eventLog) => {
+  formatNewEvent = (eventLog) => {
     const { event } = eventLog
     switch (event) {
       case 'dhtQueryRunner.dialPeer.Dialing':
-        await this.processDialPeerDialing(eventLog)
+        this.processDialPeerDialing(eventLog)
         break
       case 'dhtQueryRunner.dialPeer.DialFailure':
-        await this.processDialPeerFailure(eventLog)
+        this.processDialPeerFailure(eventLog)
         break
       case 'dhtQueryRunner.dialPeer.DialSuccess':
-        await this.processDialPeerSuccess(eventLog)
+        this.processDialPeerSuccess(eventLog)
         break
       case 'dhtQueryRunner.dialPeer.AlreadyConnected':
-        await this.processDialPeerAlreadyConencted(eventLog)
+        this.processDialPeerAlreadyConencted(eventLog)
         break
       case 'dhtQueryRunner.queryPeer.Start':
-        await this.processPeerQueryStart(eventLog)
+        this.processPeerQueryStart(eventLog)
         break
       case 'dhtQueryRunner.queryPeer.End':
-        await this.processPeerQueryEnd(eventLog)
+        this.processPeerQueryEnd(eventLog)
         break
       case 'dhtQueryRunner.queryPeer.Result':
-        await this.processPeerQueryResult(eventLog)
+        this.processPeerQueryResult(eventLog)
         break
       case 'dhtQueryRunner.addPeerToQuery':
-        await this.processPeerAdded(eventLog)
+        this.processPeerAdded(eventLog)
         break
       case 'dhtQueryRunner.Run.Start':
-        await this.processQueryRunnerStart(eventLog)
+        this.processQueryRunnerStart(eventLog)
         break
       case 'dhtQueryRunner.Run.End':
-        await this.processQueryRunnerEnd(eventLog)
+        this.processQueryRunnerEnd(eventLog)
         break
       default:
     }
@@ -460,9 +448,9 @@ class EventLogParserService {
     return this.data
   }
 
-  formatEvents = async () => {
+  formatEvents = () => {
     for (const eventLog of this.formattedArray) {
-      await this.formatNewEvent(eventLog)
+      this.formatNewEvent(eventLog)
     }
     
     return this.data
