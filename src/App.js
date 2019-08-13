@@ -2,18 +2,18 @@ import React, { Component } from 'react'
 import axios from 'axios'
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCheckCircle, faMoon } from '@fortawesome/free-solid-svg-icons'
+import { faCheckCircle, faMoon, faDownload } from '@fortawesome/free-solid-svg-icons'
 import './App.css'
 import { Chart } from './Components/Chart'
 import { ErrorMessage } from './Components/ErrorMessage'
 import { EventLogParser } from './Services/EventLogParser'
-//import { digestMessage } from './utils'
 
 let fileReader
 const windowWidth = window.innerWidth - 300
 
 class App extends Component {
   state = {
+    rawData: {},
     data: null,
     queryId: null,
     darkMode: false,
@@ -29,6 +29,7 @@ class App extends Component {
     sendingQuery: false,
   }
   formattedArray = []
+  rawFileContent = {}
 
   readStream = () => {
     this.setState({ readingStream: true, streamingError: false })
@@ -52,8 +53,13 @@ class App extends Component {
     source.addEventListener(
       'message',
       (e) => {
-        const data = EventLogParser.formatNewEvent(JSON.parse(e.data))
-        this.setState({ data })
+        const data = EventLogParser.formatNewEvent(e.data)
+        let rawData = window.Object.assign({}, this.state.rawData)
+        rawData[data.id] = JSON.parse(e.data)
+        this.setState({ 
+          data,
+          rawData,
+        })
       },
       false,
     )
@@ -122,10 +128,12 @@ class App extends Component {
   handleFileRead = (e) => {
     // TODO: reject random files
     const content = fileReader.result
+    this.rawFileContent = content
     try {
       this.formattedArray = EventLogParser.parseFileContent(content)
       this.identifyFirstQuery()
       this.filterData()
+
     } catch (e) {
       console.error('error', e)
       this.setState({ fileReadError: true })
@@ -154,7 +162,13 @@ class App extends Component {
     // filter and reformat the data for the visualization
     EventLogParser.formattedArray = this.formattedArray
     const data = EventLogParser.formatEvents()
-    this.setState({ data })
+
+    let rawData = window.Object.assign({}, this.state.rawData)
+    rawData[Object.keys(data.queries)[0]] = this.rawFileContent
+    this.setState({ 
+      data,
+      rawData
+    })
   }
 
   toggleDarkMode = () => {
@@ -166,6 +180,29 @@ class App extends Component {
     } else {
       document.body.classList.remove('darkMode')
     }
+  }
+
+  saveLog = (queryId) => {
+    const { rawData } = this.state
+    if (!rawData) {
+      alert('no data')
+      return
+    }
+
+    const content = rawData[queryId]
+    if (!content) {
+      alert(`no content with id ${queryId}`)
+      return
+    }
+
+    // https://stackoverflow.com/a/30800715/3512709
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(content);
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `${queryId}.json`);
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
   }
 
   render() {
@@ -236,6 +273,15 @@ class App extends Component {
                       style={{ color: '#7DC24B' }}
                     />
                   )}
+                  <div 
+                    style={{ display: 'inline-block', padding: '5px' }}
+                    onClick={(e) => {e.stopPropagation(); this.saveLog(key)}}
+                  >
+                    <FontAwesomeIcon
+                      icon={faDownload}
+                      style={{ color: '#7DC24B' }}
+                    />
+                  </div>
                 </button>
               ))}
           </div>
@@ -243,8 +289,8 @@ class App extends Component {
 
         <div className="startOptions">
           {!data && (
-            <>
-              <div className="row center">
+            <div className="row" style={{ alignItems: 'center' }}>
+              <div className="row center" style={{ margin: '0px' }}>
                 <label htmlFor="file-upload" className="customFileUpload">
                   CHOOSE FILE
                 </label>
@@ -255,9 +301,10 @@ class App extends Component {
                   onChange={(e) => this.handleFileChosen(e.target.files[0])}
                 />
               </div>
-              <div>-or-</div>
 
-              <div className="inputRow">
+              <span style={{ padding: '0px 15px' }}> - or - </span>
+
+              <div className="inputRow" style={{ margin: '0px' }}>
                 <div className="mainInput">
                   <input
                     disabled={readingStream}
@@ -272,7 +319,7 @@ class App extends Component {
                     : 'Read from stream'}
                 </button>
               </div>
-            </>
+            </div>
           )}
 
           {(readingStream || !data) && (

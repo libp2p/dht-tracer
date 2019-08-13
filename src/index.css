@@ -37,6 +37,7 @@ code {
   white-space: nowrap;
   overflow: hidden;
   line-height: 40px;
+  font-family: "Courier New", Courier, "Lucida Sans Typewriter", "Lucida Typewriter";
 }
 
 .chartMiniColumn {

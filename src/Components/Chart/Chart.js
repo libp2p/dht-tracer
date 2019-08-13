@@ -77,7 +77,7 @@ class Chart extends Component {
 
 class Query extends Component {
   render() {
-    const { query, windowWidth } = this.props
+    const { query, windowWidth, data } = this.props
     const {
       peers,
       id,
@@ -108,6 +108,7 @@ class Query extends Component {
         peer={peers[index]}
         query={query}
         windowWidth={windowWidth}
+        data={data}
       />
     )
 
@@ -120,7 +121,7 @@ class Query extends Component {
           <div className="chartMiniColumn">hops</div>
         </div>
         <div className="chartRow headerRow">
-          <div className="chartLabel">{label}</div>
+          <div className="chartLabel" data-tip={label}>{label}</div>
           <div className="chartMiniColumn" />
           <div className="chartMiniColumn">{xor}</div>
           <div className="chartMiniColumn">{hops}</div>
@@ -201,7 +202,7 @@ class Peer extends Component {
 
     return (
       <div className="chartRow" style={style}>
-        <div className="chartLabel">{label}</div>
+        <div className="chartLabel" data-tip={label}>{label}</div>
         <div className="chartMiniColumn">
           {peer.duplicate && (
             <IconCircles
@@ -242,7 +243,7 @@ class Peer extends Component {
                   <IconCircles
                     icon={faTimesCircle}
                     outlineClass="dialFailure"
-                    dataTipText="dail failure"
+                    dataTipText={`dail failure`}
                   />
                 )}
                 {action.type === 'query' && action.success && (

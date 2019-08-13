@@ -1,6 +1,5 @@
 import { DateTime } from 'luxon'
 import update from 'immutability-helper'
-//import { digestMessage } from '../utils'
 
 class EventLogParserService {
   formattedArray = []
