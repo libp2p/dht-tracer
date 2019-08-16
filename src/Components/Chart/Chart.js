@@ -195,6 +195,8 @@ class Peer extends Component {
   render() {
     const { peer, query, windowWidth, style } = this.props
     const { id, filteredPeersNum, closerPeersNum, newPeersNum } = peer
+    const { peerQueries } = query
+    console.log(peerQueries[id] && (!peerQueries[id].success || !peerQueries[id].end))
     const barsWidth = windowWidth - 50
     const label = `Peer ${id}`
     let smallestRightMargin = barsWidth
@@ -211,6 +213,13 @@ class Peer extends Component {
               dataTipText="duplicate"
             />
           )}
+          {/*peerQueries[id] && (!peerQueries[id].success || !peerQueries[id].end) && (
+            <IconCircles
+              icon={faSpinner}
+              dataTipText="awaiting response"
+              floatRight
+            />
+          )*/}
         </div>
         <div data-tip="xor" className="chartMiniColumn">
           {peer.xor}

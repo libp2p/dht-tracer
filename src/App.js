@@ -53,9 +53,25 @@ class App extends Component {
     source.addEventListener(
       'message',
       (e) => {
-        const data = EventLogParser.formatNewEvent(e.data)
+        let parsedData = undefined
+        try {
+          parsedData = JSON.parse(e.data)
+        } catch (e) {
+          console.log('err parsing message data', e)
+          return
+        }
+
+        const { data, id } = EventLogParser.formatNewEvent(parsedData)
         let rawData = window.Object.assign({}, this.state.rawData)
-        rawData[data.id] = JSON.parse(e.data)
+
+        if (id) {
+          if (rawData[id]) {
+            rawData[id] += `\n\ndata: ${e.data}`
+          } else {
+            rawData[id] = `data: ${e.data}`
+          }
+        }
+
         this.setState({ 
           data,
           rawData,
@@ -196,13 +212,13 @@ class App extends Component {
     }
 
     // https://stackoverflow.com/a/30800715/3512709
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(content);
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `${queryId}.json`);
-    document.body.appendChild(downloadAnchorNode); // required for firefox
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(content)
+    const downloadAnchorNode = document.createElement('a')
+    downloadAnchorNode.setAttribute("href", dataStr)
+    downloadAnchorNode.setAttribute("download", `${queryId}.json`)
+    document.body.appendChild(downloadAnchorNode) // required for firefox
+    downloadAnchorNode.click()
+    downloadAnchorNode.remove()
   }
 
   render() {

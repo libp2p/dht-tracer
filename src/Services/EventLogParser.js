@@ -41,6 +41,8 @@ class EventLogParserService {
               start: this.formatDate(time),
               end: this.formatDate(time),
               duration: 0,
+              peersSeen: [],
+              peersQueried: [],
               peers: [],
               seen: 0,
               queried: 0,
@@ -138,6 +140,8 @@ class EventLogParserService {
 
     const query = this.data.queries[queryId]
     const updatedQueryRunnerData = {
+      peersSeen: PeersSeen,
+      peersQueried: PeersQueried,
       seen: PeersSeen.length,
       queried: PeersQueried.length,
       toDial: PeersDialQueueLen,
@@ -442,9 +446,24 @@ class EventLogParserService {
         this.processQueryRunnerEnd(eventLog)
         break
       default:
+        //console.warn('got unknown event', event)
+        return {
+          data: window.Object.assign({}, this.data),
+          id: null,
+        }
     }
 
-    return this.data
+    const {
+      QueryRunner: {
+        Query: { Key },
+        StartTime,
+      },
+    } = eventLog
+    const queryId = Key + ' @ ' + StartTime
+    return {
+      data: window.Object.assign({}, this.data),
+      id: queryId,
+    }
   }
 
   formatEvents = () => {
