@@ -19,6 +19,7 @@ class App extends Component {
     visiblePeers: [],
     sortKey: 'xor',
     sortAsc: true,
+    completedFilters: ['completed', 'not-completed'],
     darkMode: false,
     readingStream: false,
     fileReadError: false,
@@ -254,17 +255,53 @@ class App extends Component {
     if (!this.state.data || !this.state.data.queries)
       return
 
-    let { data: { queries } } = this.state
+    let { data: { queries }, completedFilters } = this.state
 
     const query = queries[this.state.queryId]
     if (!query)
       return
 
-    const { peers } = query
-    if (!peers)
+    const { peers, id, peerDials, peerQueries } = query
+    if (!peers || !id || !peerDials || !peerQueries)
       return
 
     let visiblePeers = peers.slice() // note: copy array
+
+    // 1. filter
+    switch (completedFilters.length) {
+    case 0:
+      visiblePeers = []
+      break
+
+    case 1:
+      let completedPeerIds = []
+      for (let peer of peers) {
+        if (!peer || !peer.id)
+          continue
+
+        let dialed = peerDials[peer.id]
+        let awaitingResponse = peerQueries[peer.id] && (!peerQueries[peer.id].end || (peerQueries[peer.id].closerPeers && peerQueries[peer.id].closerPeers.length === 0))
+
+        if (dialed && !awaitingResponse)
+          completedPeerIds.push(peer.id)
+      }
+
+      if (completedFilters[0].toLowerCase() === 'completed') {
+        visiblePeers = visiblePeers.filter((visiblePeer) => { return visiblePeer && visiblePeer.id && completedPeerIds.includes(visiblePeer.id) })
+      } else {
+        visiblePeers = visiblePeers.filter((visiblePeer) => { return visiblePeer && visiblePeer.id && !completedPeerIds.includes(visiblePeer.id) })
+      }
+      break
+
+    case 2:
+      break
+
+    default:
+      console.error(`expected completed filters length <= 2; received: ${completedFilters.length}`, completedFilters)
+    }
+
+
+    // 2. sort
     visiblePeers.sort(compare(this.state.sortKey, this.state.sortAsc ? 'asc' : 'desc'))
 
     this.setState({
@@ -340,6 +377,9 @@ class App extends Component {
 
     if (this.state.recentlySentQuery)
       this.checkQueryLengthsAndSetActive(prevState)
+
+    if (prevState.completedFilters !== this.state.completedFilters)
+      this.updateVisiblePeers()
   }
 
   render() {
@@ -517,6 +557,19 @@ class App extends Component {
               queryId={queryId}
               darkMode={darkMode}
               setSortKey={this.setSortKey}
+              completedFilters={this.state.completedFilters}
+              handleCompletedFilterChange={(e) => {
+                let filter = e.target.value
+                let completedFilters = this.state.completedFilters.slice()
+
+                if (completedFilters.includes(filter)) {
+                  completedFilters = completedFilters.filter((completedFilter) => { return completedFilter !== filter })
+                } else {
+                  completedFilters.push(filter)
+                }
+
+                this.setState({ completedFilters })
+              }}
               visiblePeers={this.state.visiblePeers}
               sortKey={this.state.sortKey}
               sortAsc={this.state.sortAsc}

@@ -39,8 +39,8 @@ const afterBarStyle = (smallestRightMargin, windowWidth, barsWidth) => {
 
 class Chart extends Component {
   shouldComponentUpdate(nextProps) {
-    const { queryId: nextQueryId, data: nextData } = nextProps
-    const { queryId, data } = this.props
+    const { queryId: nextQueryId, data: nextData, nextSortKey, nextSortAsc, nextVisiblePeers, nextCompletedFilters } = nextProps
+    const { queryId, data, sortKey, sortAsc, visiblePeers, completedFilters } = this.props
 
     if (nextQueryId !== queryId) {
       return true
@@ -57,6 +57,9 @@ class Chart extends Component {
       return true
     }
 
+    if (nextSortKey !== sortKey || nextSortAsc !== sortAsc || visiblePeers !== nextVisiblePeers || nextCompletedFilters !== completedFilters)
+      return true
+
     return false
   }
 
@@ -65,7 +68,7 @@ class Chart extends Component {
   }
 
   render() {
-    const { data, width, queryId, visiblePeers, sortKey, sortAsc } = this.props
+    const { data, width, queryId, visiblePeers, sortKey, sortAsc, completedFilters, handleCompletedFilterChange } = this.props
     const { queries } = data
 
     const query = queries[queryId]
@@ -81,6 +84,8 @@ class Chart extends Component {
           visiblePeers={visiblePeers}
           sortKey={sortKey}
           sortAsc={sortAsc}
+          completedFilters={completedFilters}
+          handleCompletedFilterChange={handleCompletedFilterChange}
         />
       </div>
     )
@@ -89,7 +94,7 @@ class Chart extends Component {
 
 class Query extends Component {
   render() {
-    const { query, windowWidth, data, visiblePeers, sortKey, sortAsc } = this.props
+    const { query, windowWidth, data, visiblePeers, sortKey, sortAsc, completedFilters, handleCompletedFilterChange } = this.props
     const {
       peerDials,
       peerAdds,
@@ -129,7 +134,7 @@ class Query extends Component {
 
     return (
       <>
-        <div className="chartRow">
+        <div className="chartRow" style={{ zIndex: 10, display: 'flex' }}>
           <div className="chartLabel" />
           <div className="chartMiniColumn" />
           <div 
@@ -139,7 +144,7 @@ class Query extends Component {
               {sortKey.toLowerCase() === 'xor' && (
                 <FontAwesomeIcon
                   data-tip="awaiting response"
-                  icon={sortAsc ? faArrowDown : faArrowUp}
+                  icon={sortAsc ? faArrowUp : faArrowDown}
                   className="color-black fa-xs"
                 />
               )}
@@ -152,14 +157,22 @@ class Query extends Component {
               {sortKey.toLowerCase() === 'hops' && (
                 <FontAwesomeIcon
                   data-tip="sort by hops"
-                  icon={sortAsc ? faArrowDown : faArrowUp}
+                  icon={sortAsc ? faArrowUp : faArrowDown}
                   className="color-black fa-xs"
                 />
               )}
               hops
           </div>
+          <div className="uk-inline" style={{ paddingLeft: '10px' }}>
+            <button className="uk-button uk-button-default" type="button">Filters</button>
+            <div data-uk-dropdown="mode: click">
+              <label><input className="uk-checkbox" type="checkbox" value="completed" checked={completedFilters.includes('completed')} onChange={handleCompletedFilterChange} /> Completed</label>
+              <br />
+              <label><input className="uk-checkbox" type="checkbox" value="not-completed" checked={completedFilters.includes('not-completed')} onChange={handleCompletedFilterChange} /> Not Completed</label>
+            </div>
+          </div>
         </div>
-        <div className="chartRow headerRow">
+        <div className="chartRow headerRow" style={{ zIndex: 1 }}>
           <div className="chartLabel" data-tip={label}>{label}</div>
           <div className="chartMiniColumn" />
           <div className="chartMiniColumn">{xor}</div>
