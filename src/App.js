@@ -16,10 +16,14 @@ class App extends Component {
     rawData: {},
     data: null,
     queryId: null,
+    visiblePeers: [],
+    sortKey: 'xor',
+    sortAsc: true,
     darkMode: false,
     readingStream: false,
     fileReadError: false,
     streamingError: false,
+    recentlySentQuery: false,
     loggingEndpoint: 'http://lvh.me:7000/events',
     command: '',
     commandArgs: '',
@@ -57,7 +61,7 @@ class App extends Component {
         try {
           parsedData = JSON.parse(e.data)
         } catch (e) {
-          console.log('err parsing message data', e)
+          console.error('err parsing message data', e)
           return
         }
 
@@ -87,7 +91,10 @@ class App extends Component {
 
   changeCommand = (e) => {
     const command = e.target.value
-    this.setState({ command })
+    this.setState({ 
+      command,
+      commandArgs: '',
+    })
     this.updateCommandExplanation(command)
   }
 
@@ -124,6 +131,10 @@ class App extends Component {
     const commandEndpoint = loggingEndpoint.split('/events')[0]
     const baseUrl = `${commandEndpoint}/cmd?q=${command}`
     const commandUrlString = commandArgs ? `${baseUrl}+${commandArgs}` : baseUrl
+
+    this.setState({
+      recentlySentQuery: true,
+    })
     axios
       .get(commandUrlString)
       .then((res) => {
@@ -221,6 +232,116 @@ class App extends Component {
     downloadAnchorNode.remove()
   }
 
+  setSortKey = (sortKey) => {
+    if (sortKey.toLowerCase() === this.state.sortKey.toLowerCase()) {
+      let sortAsc = !this.state.sortAsc
+      this.setState({
+        sortAsc,
+      })
+
+      this.updateVisiblePeers()
+      return
+    }
+
+    this.setState({
+      sortKey,
+      sortAsc: true,
+    })
+    this.updateVisiblePeers()
+  }
+
+  updateVisiblePeers() {
+    if (!this.state.data || !this.state.data.queries)
+      return
+
+    let { data: { queries } } = this.state
+
+    const query = queries[this.state.queryId]
+    if (!query)
+      return
+
+    const { peers } = query
+    if (!peers)
+      return
+
+    let visiblePeers = peers.slice() // note: copy array
+    visiblePeers.sort(compare(this.state.sortKey, this.state.sortAsc ? 'asc' : 'desc'))
+
+    this.setState({
+      visiblePeers,
+    })
+  }
+
+  // note: this is an "hacky" and relies on the fact that there's a high degree of probability that if we've recently \
+  //       sent a query, that whatever comes in next is likely ours...
+  checkQueryLengthsAndSetActive(prevState) {
+    if (!this.state.data || !Object.keys(this.state.data.queries).length)
+      return
+
+    // note: most recent query id
+    const curKeys = Object.keys(this.state.data.queries)
+    const queryId = curKeys[curKeys.length - 1]
+    if (!queryId)
+      return
+
+    const prevData = prevState.data
+    const curData = this.state.data
+    if (!prevData && curData) {
+      this.setState({
+        queryId,
+        recentlySentQuery: false
+      })
+      return
+    }
+    if (!prevData && !curData)
+      return
+
+    const prevKeys = Object.keys(prevData.queries)
+    if (prevKeys.length !== curKeys.length) {
+      this.setState({
+        queryId,
+        recentlySentQuery: false
+      })
+      return
+    }
+  }
+
+  checkPeersAndUpdateVisiblePeers(prevState) {
+    const prevData = prevState.data
+    const curData = this.state.data
+    if (!prevData && curData) {
+      this.updateVisiblePeers()
+      return
+    }
+    if (!prevData && !curData)
+      return
+
+    const prevQuery = prevData.queries[this.state.queryId]
+    const curQuery = curData.queries[this.state.queryId]
+    if (!prevQuery && curQuery) {
+      this.updateVisiblePeers()
+      return
+    }
+    if (!prevQuery && !curQuery)
+      return
+
+    if (prevQuery.peers.length !== curQuery.peers.length)
+      this.updateVisiblePeers()
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    // note: sorting for visible peers...
+    if (prevState.sortKey !== this.state.sortKey
+      || prevState.sortAsc !== this.state.sortAsc)
+      this.updateVisiblePeers()
+
+    // note: check peers for visible peers...
+    this.checkPeersAndUpdateVisiblePeers(prevState)
+
+    if (this.state.recentlySentQuery)
+      this.checkQueryLengthsAndSetActive(prevState)
+  }
+
   render() {
     let {
       data,
@@ -235,7 +356,7 @@ class App extends Component {
       commandArgExplanation,
       ranQuery,
       queryError,
-      sendingQuery,
+      //sendingQuery,
     } = this.state
 
     if (data && data.queries && !queryId) {
@@ -281,8 +402,8 @@ class App extends Component {
                   onClick={() => this.changeQueryFilter(key)}
                   className={`queryId ${queryId === key && 'selected'}`}
                   key={key}
+                  data-tip={key}
                 >
-                  {key}
                   {key === queryId && (
                     <FontAwesomeIcon
                       icon={faCheckCircle}
@@ -298,6 +419,7 @@ class App extends Component {
                       style={{ color: '#7DC24B' }}
                     />
                   </div>
+                  <span>{key}</span>
                 </button>
               ))}
           </div>
@@ -361,9 +483,10 @@ class App extends Component {
                   value={commandArgs}
                   onChange={this.changeCommandArgs}
                   placeholder={commandArgExplanation}
+                  onKeyDown={(event) => {if(event.keyCode === 13) this.query();}}
                 />
               </div>
-              <button onClick={this.query} disabled={sendingQuery || !command}>
+              <button onClick={this.query}>
                 Query
               </button>
             </div>
@@ -393,12 +516,42 @@ class App extends Component {
               data={data}
               queryId={queryId}
               darkMode={darkMode}
+              setSortKey={this.setSortKey}
+              visiblePeers={this.state.visiblePeers}
+              sortKey={this.state.sortKey}
+              sortAsc={this.state.sortAsc}
             />
           )}
         </div>
       </div>
     )
   }
+}
+
+// function for dynamic sorting
+// https://www.sitepoint.com/sort-an-array-of-objects-in-javascript/
+const compare = (key, order='asc') => {
+  return function(a, b) {
+    if(!a.hasOwnProperty(key) || !b.hasOwnProperty(key)) {
+      // property doesn't exist on either object
+      return 0;
+    }
+
+    const varA = (typeof a[key] === 'string') ?
+      a[key].toUpperCase() : a[key];
+    const varB = (typeof b[key] === 'string') ?
+      b[key].toUpperCase() : b[key];
+
+    let comparison = 0;
+    if (varA > varB) {
+      comparison = 1;
+    } else if (varA < varB) {
+      comparison = -1;
+    }
+    return (
+      (order === 'desc') ? (comparison * -1) : comparison
+    );
+  };
 }
 
 export default App

@@ -24,6 +24,16 @@ code {
 .chartRow {
   border-bottom: 1px solid #444444;
   padding: 0px 8px;
+
+  transition: all 0.25s ease;
+
+  transform: translate3d(0,0,0); /* note: force GPU acceleration */
+}
+
+.chartRow.hoverable:hover {
+  background-color: #ececec;
+  box-shadow: 2px 2px 3px #8a8a8a;
+  font-weight: bold;
 }
 
 .headerRow {
@@ -43,6 +53,7 @@ code {
 .chartMiniColumn {
   display: inline-block;
   width: 40px;
+  height: 40px;
   line-height: 40px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -55,6 +66,8 @@ code {
   height: 40px;
   padding-top: 10px;
   position: relative;
+
+  transform: translate3d(0,0,0); /* note: force GPU acceleration */
 }
 
 .chartBars .chartBar {
@@ -66,7 +79,7 @@ code {
 }
 
 .chartBarAfterDescription {
-  padding-left: 5px;
+  padding-left: 25px;
   white-space: nowrap;
 }
 
@@ -139,7 +152,13 @@ code {
 }
 
 .tracer button.queryId {
+  width: 375px;
+  max-width: 40%;
+
   text-transform: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tracer .customFileUpload {
@@ -226,4 +245,16 @@ code {
   justify-content: center;
   align-items: center;
   margin-bottom: 15px;
+}
+
+.color-black {
+  color: black;
+}
+
+.list > div {
+  transform: translate3d(0,0,0); /* note: force GPU acceleration */
+}
+
+.pointer {
+  cursor: pointer;
 }

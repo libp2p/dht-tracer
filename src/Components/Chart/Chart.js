@@ -1,12 +1,16 @@
 import React, { Component } from 'react'
 import ReactTooltip from 'react-tooltip'
 import { FixedSizeList as List } from 'react-window'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faTimesCircle,
   faExclamationCircle,
   faCheckCircle,
   faPowerOff,
   faSpinner,
+  faClock,
+  faArrowUp,
+  faArrowDown,
 } from '@fortawesome/free-solid-svg-icons'
 import { IconCircles } from '../IconCircles'
 
@@ -61,7 +65,7 @@ class Chart extends Component {
   }
 
   render() {
-    const { data, width, queryId } = this.props
+    const { data, width, queryId, visiblePeers, sortKey, sortAsc } = this.props
     const { queries } = data
 
     const query = queries[queryId]
@@ -69,7 +73,15 @@ class Chart extends Component {
     return (
       <div className="chart">
         <ReactTooltip />
-        <Query query={query} data={data} windowWidth={width} />
+        <Query 
+          query={query}
+          data={data}
+          windowWidth={width}
+          setSortKey={this.props.setSortKey}
+          visiblePeers={visiblePeers}
+          sortKey={sortKey}
+          sortAsc={sortAsc}
+        />
       </div>
     )
   }
@@ -77,9 +89,10 @@ class Chart extends Component {
 
 class Query extends Component {
   render() {
-    const { query, windowWidth, data } = this.props
+    const { query, windowWidth, data, visiblePeers, sortKey, sortAsc } = this.props
     const {
-      peers,
+      peerDials,
+      peerAdds,
       id,
       seen,
       queried,
@@ -105,10 +118,12 @@ class Query extends Component {
       <Peer
         style={style}
         key={index}
-        peer={peers[index]}
+        peer={visiblePeers[index]}
         query={query}
         windowWidth={windowWidth}
         data={data}
+        peerDials={peerDials}
+        peerAdds={peerAdds}
       />
     )
 
@@ -117,8 +132,32 @@ class Query extends Component {
         <div className="chartRow">
           <div className="chartLabel" />
           <div className="chartMiniColumn" />
-          <div className="chartMiniColumn">xor</div>
-          <div className="chartMiniColumn">hops</div>
+          <div 
+            className={`chartMiniColumn pointer ${sortKey.toLowerCase() === 'xor' ? 'bold' : ''}`}
+            data-tip="sort by xor" 
+            onClick={() => { this.props.setSortKey('xor'); }}>
+              {sortKey.toLowerCase() === 'xor' && (
+                <FontAwesomeIcon
+                  data-tip="awaiting response"
+                  icon={sortAsc ? faArrowDown : faArrowUp}
+                  className="color-black fa-xs"
+                />
+              )}
+              xor
+          </div>
+          <div 
+            className={`chartMiniColumn pointer ${sortKey.toLowerCase() === 'hops' ? 'bold' : ''}`} 
+            data-tip="sort by hops" 
+            onClick={() => { this.props.setSortKey('hops'); }}>
+              {sortKey.toLowerCase() === 'hops' && (
+                <FontAwesomeIcon
+                  data-tip="sort by hops"
+                  icon={sortAsc ? faArrowDown : faArrowUp}
+                  className="color-black fa-xs"
+                />
+              )}
+              hops
+          </div>
         </div>
         <div className="chartRow headerRow">
           <div className="chartLabel" data-tip={label}>{label}</div>
@@ -143,7 +182,7 @@ class Query extends Component {
               ) : (
                 <IconCircles
                   icon={faSpinner}
-                  outlineClass="queryCompleted"
+                  outlineClass="queryCompleted fa-spin"
                   dataTipText="query pending"
                   floatRight
                 />
@@ -176,9 +215,10 @@ class Query extends Component {
         </div>
         <List
           height={window.innerHeight}
-          itemCount={peers.length}
+          itemCount={visiblePeers.length}
           width={window.innerWidth}
           itemSize={40}
+          className={"list"}
         >
           {PeerRow}
         </List>
@@ -193,17 +233,17 @@ class Query extends Component {
 
 class Peer extends Component {
   render() {
-    const { peer, query, windowWidth, style } = this.props
+    const { peer, query, windowWidth, style, peerDials } = this.props
     const { id, filteredPeersNum, closerPeersNum, newPeersNum } = peer
     const { peerQueries } = query
-    console.log(peerQueries[id] && (!peerQueries[id].success || !peerQueries[id].end))
     const barsWidth = windowWidth - 50
     const label = `Peer ${id}`
     let smallestRightMargin = barsWidth
     let totalDuration = 0
+    const dialed = peerDials[id];
 
     return (
-      <div className="chartRow" style={style}>
+      <div className="chartRow hoverable" style={style}>
         <div className="chartLabel" data-tip={label}>{label}</div>
         <div className="chartMiniColumn">
           {peer.duplicate && (
@@ -213,13 +253,20 @@ class Peer extends Component {
               dataTipText="duplicate"
             />
           )}
-          {/*peerQueries[id] && (!peerQueries[id].success || !peerQueries[id].end) && (
-            <IconCircles
-              icon={faSpinner}
-              dataTipText="awaiting response"
-              floatRight
+          {!dialed && (
+            <FontAwesomeIcon
+              icon={faClock}
+              className="color-black"
+              data-tip="Queued"
             />
-          )*/}
+          )}
+          {peerQueries[id] && (!peerQueries[id].end || (peerQueries[id].closerPeers && peerQueries[id].closerPeers.length === 0)) && (
+            <FontAwesomeIcon
+              data-tip="awaiting response"
+              icon={faSpinner}
+              className="color-black fa-spin"
+            />
+          )}
         </div>
         <div data-tip="xor" className="chartMiniColumn">
           {peer.xor}
@@ -245,6 +292,8 @@ class Peer extends Component {
                     ? 'already connected'
                     : action.type === 'added'
                     ? ''
+                    : !dialed 
+                    ? 'queued'
                     : `duration: ${action.duration}ms`
                 }`}
               >
@@ -270,7 +319,7 @@ class Peer extends Component {
             className="chartBar chartBarAfterDescription"
             style={afterBarStyle(smallestRightMargin || 0, windowWidth, barsWidth)}
           >
-            {`${totalDuration}ms`}{' '}
+            { !dialed ? 'queued' : `${totalDuration}ms`}{' '}
             {closerPeersNum
               ? `${newPeersNum}/${filteredPeersNum}/${closerPeersNum}`
               : ''}
