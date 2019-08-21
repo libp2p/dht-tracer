@@ -1,8 +1,12 @@
 import React, { Component } from 'react'
 import axios from 'axios'
+import html2canvas from 'html2canvas';
+import canvasToBlob from 'async-canvas-to-blob'
+import { saveAs } from 'file-saver'
+import { debounce } from 'lodash'
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCheckCircle, faMoon, faDownload } from '@fortawesome/free-solid-svg-icons'
+import { faCheckCircle, faMoon, faDownload, faCamera } from '@fortawesome/free-solid-svg-icons'
 import './App.css'
 import { Chart } from './Components/Chart'
 import { ErrorMessage } from './Components/ErrorMessage'
@@ -16,10 +20,11 @@ class App extends Component {
     rawData: {},
     data: null,
     queryId: null,
-    visiblePeers: [],
+    visiblePeerIds: [],
     sortKey: 'xor',
     sortAsc: true,
     completedFilters: ['completed', 'not-completed'],
+    renderFullList: false,
     darkMode: false,
     readingStream: false,
     fileReadError: false,
@@ -154,6 +159,8 @@ class App extends Component {
   }
 
   handleFileRead = (e) => {
+    this.setState({ fileReadError: false })
+    
     // TODO: reject random files
     const content = fileReader.result
     this.rawFileContent = content
@@ -210,6 +217,32 @@ class App extends Component {
     }
   }
 
+  screenshot = debounce((queryId) => {
+    const renderFullList = !this.state.renderFullList
+    this.setState({
+      renderFullList,
+    }, async () => {
+      let node = document.getElementById('the-chart');
+
+      try {
+        const canvas = await html2canvas(node)
+
+        const blob = await canvasToBlob(canvas);
+
+        saveAs(blob, `${queryId}.png`)
+      } catch(e) {
+        console.error('err saving image from dom', e);
+        alert('Sorry, we could not save your image')
+      }
+
+      finally {
+        this.setState({
+          renderFullList: false,
+        })
+      }
+    })
+  }, 5000, { leading: true })
+
   saveLog = (queryId) => {
     const { rawData } = this.state
     if (!rawData) {
@@ -255,7 +288,7 @@ class App extends Component {
     if (!this.state.data || !this.state.data.queries)
       return
 
-    let { data: { queries }, completedFilters } = this.state
+    const { data: { queries }, completedFilters } = this.state
 
     const query = queries[this.state.queryId]
     if (!query)
@@ -265,17 +298,20 @@ class App extends Component {
     if (!peers || !id || !peerDials || !peerQueries)
       return
 
-    let visiblePeers = peers.slice() // note: copy array
+    let peersCopy = peers.slice() // note: copy array
+    let visiblePeerIds = []
 
     // 1. filter
     switch (completedFilters.length) {
     case 0:
-      visiblePeers = []
+      this.setState({
+        visiblePeerIds
+      })
       break
 
     case 1:
       let completedPeerIds = []
-      for (let peer of peers) {
+      for (const peer of peersCopy) {
         if (!peer || !peer.id)
           continue
 
@@ -287,9 +323,9 @@ class App extends Component {
       }
 
       if (completedFilters[0].toLowerCase() === 'completed') {
-        visiblePeers = visiblePeers.filter((visiblePeer) => { return visiblePeer && visiblePeer.id && completedPeerIds.includes(visiblePeer.id) })
+        peersCopy = peersCopy.filter((visiblePeer) => { return visiblePeer && visiblePeer.id && completedPeerIds.includes(visiblePeer.id) })
       } else {
-        visiblePeers = visiblePeers.filter((visiblePeer) => { return visiblePeer && visiblePeer.id && !completedPeerIds.includes(visiblePeer.id) })
+        peersCopy = peersCopy.filter((visiblePeer) => { return visiblePeer && visiblePeer.id && !completedPeerIds.includes(visiblePeer.id) })
       }
       break
 
@@ -302,10 +338,14 @@ class App extends Component {
 
 
     // 2. sort
-    visiblePeers.sort(compare(this.state.sortKey, this.state.sortAsc ? 'asc' : 'desc'))
+    peersCopy.sort(compare(this.state.sortKey, this.state.sortAsc ? 'asc' : 'desc'))
+
+    // 3. extract id's
+    for (const peer of peersCopy)
+      visiblePeerIds.push(peer.id)
 
     this.setState({
-      visiblePeers,
+      visiblePeerIds,
     })
   }
 
@@ -343,42 +383,48 @@ class App extends Component {
     }
   }
 
-  checkPeersAndUpdateVisiblePeers(prevState) {
+  checkPeers(prevState) {
     const prevData = prevState.data
     const curData = this.state.data
     if (!prevData && curData) {
-      this.updateVisiblePeers()
-      return
+      return true
     }
     if (!prevData && !curData)
-      return
+      return false
 
     const prevQuery = prevData.queries[this.state.queryId]
     const curQuery = curData.queries[this.state.queryId]
     if (!prevQuery && curQuery) {
-      this.updateVisiblePeers()
-      return
+      return true
     }
     if (!prevQuery && !curQuery)
-      return
+      return false
 
     if (prevQuery.peers.length !== curQuery.peers.length)
-      this.updateVisiblePeers()
+      return true
+
+    return false
   }
 
   componentDidUpdate(prevProps, prevState) {
-    // note: sorting for visible peers...
-    if (prevState.sortKey !== this.state.sortKey
-      || prevState.sortAsc !== this.state.sortAsc)
-      this.updateVisiblePeers()
-
-    // note: check peers for visible peers...
-    this.checkPeersAndUpdateVisiblePeers(prevState)
-
     if (this.state.recentlySentQuery)
       this.checkQueryLengthsAndSetActive(prevState)
 
-    if (prevState.completedFilters !== this.state.completedFilters)
+    let shouldUpdateVisiblePeers = false
+
+    // note: sorting for visible peers...
+    if (prevState.sortKey !== this.state.sortKey
+      || prevState.sortAsc !== this.state.sortAsc)
+      shouldUpdateVisiblePeers = true
+
+    // note: check peers for visible peers...
+    if (!shouldUpdateVisiblePeers)
+      shouldUpdateVisiblePeers = this.checkPeers(prevState)
+
+    if (!shouldUpdateVisiblePeers && prevState.completedFilters !== this.state.completedFilters)
+      shouldUpdateVisiblePeers = true
+
+    if (shouldUpdateVisiblePeers)
       this.updateVisiblePeers()
   }
 
@@ -406,9 +452,61 @@ class App extends Component {
     return (
       <div className="tracer">
         <div className="flex-row">
-          <div />
-          <h4 className="text-center padding">DHT Tracer </h4>
-          <div onClick={this.toggleDarkMode}>
+          <div className="foundQueriesWrapper">
+            {data && queryId &&
+              <table className="uk-table uk-table-divider">
+                <caption style={{ fontWeight: 'bold' }}>Queries Found</caption>
+                <tbody style={{ maxHeight: '150px', overflow: 'auto', display: 'block' }}>
+                  {Object.keys(data.queries).map((key) => (
+                    <tr
+                      className={`queryId ${queryId === key && 'selected'}`}
+                      key={key}
+                    >
+                      <td className="foundQueryIcon">
+                      {key === queryId && (
+                        <FontAwesomeIcon
+                          icon={faCheckCircle}
+                          style={{ color: '#7DC24B' }}
+                          data-tip="currently selected query"
+                        />
+                      )}
+                      </td>
+                      <td className="foundQueryIcon">
+                        {key === queryId && (
+                          <FontAwesomeIcon
+                            icon={faDownload}
+                            style={{ color: '#7DC24B' }}
+                            data-tip="save as text file"
+                            onClick={(e) => {e.stopPropagation(); this.saveLog(key)}}
+                          />
+                        )}
+                      </td>
+                      <td className="foundQueryIcon">
+                        {key === queryId && (
+                          <FontAwesomeIcon
+                            icon={faCamera}
+                            style={{ color: '#7DC24B' }}
+                            data-tip="save as png"
+                            onClick={(e) => {e.stopPropagation(); this.screenshot(key)}}
+                          />
+                        )}
+                      </td>
+                      <td 
+                        className="skinny"
+                        data-tip={key}
+                        onClick={() => this.changeQueryFilter(key)}
+                        style={{ cursor: 'pointer', maxWidth: '250px' }}
+                      >
+                        <div className="foundQueryKey">{key}</div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            }
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}><h4 style={{ marginBottom: '0px' }} className="text-center padding">DHT Tracer </h4></div>
+          <div onClick={this.toggleDarkMode} className="nightModeWrapper">
             <FontAwesomeIcon icon={faMoon} className="nightMode" />
           </div>
         </div>
@@ -432,39 +530,6 @@ class App extends Component {
             </div>
           </ErrorMessage>
         )}
-        {data && queryId && (
-          <div>
-            {' '}
-            Queries Found:
-            {data &&
-              Object.keys(data.queries).map((key) => (
-                <button
-                  onClick={() => this.changeQueryFilter(key)}
-                  className={`queryId ${queryId === key && 'selected'}`}
-                  key={key}
-                  data-tip={key}
-                >
-                  {key === queryId && (
-                    <FontAwesomeIcon
-                      icon={faCheckCircle}
-                      style={{ color: '#7DC24B' }}
-                    />
-                  )}
-                  <div 
-                    style={{ display: 'inline-block', padding: '5px' }}
-                    onClick={(e) => {e.stopPropagation(); this.saveLog(key)}}
-                  >
-                    <FontAwesomeIcon
-                      icon={faDownload}
-                      style={{ color: '#7DC24B' }}
-                    />
-                  </div>
-                  <span>{key}</span>
-                </button>
-              ))}
-          </div>
-        )}
-
         <div className="startOptions">
           {!data && (
             <div className="row" style={{ alignItems: 'center' }}>
@@ -570,9 +635,10 @@ class App extends Component {
 
                 this.setState({ completedFilters })
               }}
-              visiblePeers={this.state.visiblePeers}
+              visiblePeerIds={this.state.visiblePeerIds}
               sortKey={this.state.sortKey}
               sortAsc={this.state.sortAsc}
+              renderFullList={this.state.renderFullList}
             />
           )}
         </div>

@@ -22,7 +22,7 @@ const actionBarStyle = (action, data, windowWidth) => {
     new Date(action.end),
     new Date(windowWidth),
   )
-  const barStyle = {
+  let barStyle = {
     marginLeft: startPos || 0,
     marginRight: endPos || 0,
     width: width || 0,
@@ -39,8 +39,8 @@ const afterBarStyle = (smallestRightMargin, windowWidth, barsWidth) => {
 
 class Chart extends Component {
   shouldComponentUpdate(nextProps) {
-    const { queryId: nextQueryId, data: nextData, nextSortKey, nextSortAsc, nextVisiblePeers, nextCompletedFilters } = nextProps
-    const { queryId, data, sortKey, sortAsc, visiblePeers, completedFilters } = this.props
+    const { queryId: nextQueryId, data: nextData, nextSortKey, nextSortAsc, nextVisiblePeerIds, nextCompletedFilters } = nextProps
+    const { queryId, data, sortKey, sortAsc, visiblePeerIds, completedFilters } = this.props
 
     if (nextQueryId !== queryId) {
       return true
@@ -57,7 +57,7 @@ class Chart extends Component {
       return true
     }
 
-    if (nextSortKey !== sortKey || nextSortAsc !== sortAsc || visiblePeers !== nextVisiblePeers || nextCompletedFilters !== completedFilters)
+    if (nextSortKey !== sortKey || nextSortAsc !== sortAsc || visiblePeerIds !== nextVisiblePeerIds || nextCompletedFilters !== completedFilters)
       return true
 
     return false
@@ -68,24 +68,25 @@ class Chart extends Component {
   }
 
   render() {
-    const { data, width, queryId, visiblePeers, sortKey, sortAsc, completedFilters, handleCompletedFilterChange } = this.props
+    const { data, width, queryId, visiblePeerIds, sortKey, sortAsc, completedFilters, handleCompletedFilterChange, renderFullList } = this.props
     const { queries } = data
 
     const query = queries[queryId]
 
     return (
-      <div className="chart">
+      <div id="the-chart" className="chart">
         <ReactTooltip />
         <Query 
           query={query}
           data={data}
           windowWidth={width}
           setSortKey={this.props.setSortKey}
-          visiblePeers={visiblePeers}
+          visiblePeerIds={visiblePeerIds}
           sortKey={sortKey}
           sortAsc={sortAsc}
           completedFilters={completedFilters}
           handleCompletedFilterChange={handleCompletedFilterChange}
+          renderFullList={renderFullList}
         />
       </div>
     )
@@ -94,10 +95,11 @@ class Chart extends Component {
 
 class Query extends Component {
   render() {
-    const { query, windowWidth, data, visiblePeers, sortKey, sortAsc, completedFilters, handleCompletedFilterChange } = this.props
+    const { query, windowWidth, data, visiblePeerIds, sortKey, sortAsc, completedFilters, handleCompletedFilterChange, renderFullList } = this.props
     const {
       peerDials,
       peerAdds,
+      peers,
       id,
       seen,
       queried,
@@ -107,30 +109,42 @@ class Query extends Component {
       remaining,
       queryCompleted,
       success,
-      xor,
-      hops,
     } = query
     const barsWidth = windowWidth - 50
 
     const label = `Query ${id}`
-    const style = actionBarStyle(query, query, barsWidth)
-    const styleAfterBar = afterBarStyle(
+    let style = actionBarStyle(query, query, barsWidth)
+    let styleAfterBar = afterBarStyle(
       style.marginRight || 0,
       windowWidth,
       barsWidth,
     )
-    const PeerRow = ({ index, style }) => (
-      <Peer
-        style={style}
-        key={index}
-        peer={visiblePeers[index]}
-        query={query}
-        windowWidth={windowWidth}
-        data={data}
-        peerDials={peerDials}
-        peerAdds={peerAdds}
-      />
-    )
+    const PeerRow = ({ index, style }) => {
+      let visiblePeerId = visiblePeerIds[index]
+      let peerIdx = -1
+      for (const tmpPeerIdx in peers) {
+        if (peers[tmpPeerIdx].id === visiblePeerId) {
+          peerIdx = tmpPeerIdx
+          break
+        }
+      }
+
+      if (peerIdx === -1)
+        return
+
+      return (
+        <Peer
+          style={style}
+          key={index}
+          peer={peers[peerIdx]}
+          query={query}
+          windowWidth={windowWidth}
+          data={data}
+          peerDials={peerDials}
+          peerAdds={peerAdds}
+        />
+      )
+    }
 
     return (
       <>
@@ -173,10 +187,7 @@ class Query extends Component {
           </div>
         </div>
         <div className="chartRow headerRow" style={{ zIndex: 1 }}>
-          <div className="chartLabel" data-tip={label}>{label}</div>
-          <div className="chartMiniColumn" />
-          <div className="chartMiniColumn">{xor}</div>
-          <div className="chartMiniColumn">{hops}</div>
+          <div className="chartLabel" style={{ width: '200px' }} data-tip={label}>{label}</div>
           <div className="chartBars query" style={{ width: windowWidth }}>
             <div
               key={id}
@@ -226,15 +237,57 @@ class Query extends Component {
             </div>
           </div>
         </div>
-        <List
-          height={window.innerHeight}
-          itemCount={visiblePeers.length}
-          width={window.innerWidth}
-          itemSize={40}
-          className={"list"}
-        >
-          {PeerRow}
-        </List>
+        {renderFullList ? (
+          <div className="list" style={{ position: 'relative' }}>
+            <div
+              style={{ zIndex: 1000, backgroundColor: 'rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'absolute', width: '100%', height: '100%' }} 
+            >
+              <FontAwesomeIcon
+                data-tip="saving image"
+                icon={faSpinner}
+                className="color-white fa-spin"
+              />
+            </div>
+            <div style={{ width: '100%' }}>
+              {visiblePeerIds.map((visiblePeerId) => {
+                let peerIdx = -1
+                for (const tmpPeerIdx in peers) {
+                  if (peers[tmpPeerIdx].id === visiblePeerId) {
+                    peerIdx = tmpPeerIdx
+                    break
+                  }
+                }
+
+                if (peerIdx === -1)
+                  return
+
+                return (
+                  <Peer
+                    fullWidth={true}
+                    key={visiblePeerId}
+                    style={style}
+                    peer={peers[peerIdx]}
+                    query={query}
+                    windowWidth={windowWidth}
+                    data={data}
+                    peerDials={peerDials}
+                    peerAdds={peerAdds}
+                  />
+              )
+            })}
+            </div>
+          </div>
+         ) : (
+          <List
+            height={window.innerHeight}
+            itemCount={visiblePeerIds.length}
+            width={window.innerWidth}
+            itemSize={40}
+            className={"list"}
+          >
+            {PeerRow}
+          </List>
+        )}
         {/* comment out list and uncomment map below to view without windowing, scrolling feels faster, but might cause rerendering to be very slow with very long peer lists */}
         {/* {peers.map((peer, key) => (
            <Peer key={key} peer={peer} query={query} windowWidth={windowWidth} />
@@ -246,7 +299,7 @@ class Query extends Component {
 
 class Peer extends Component {
   render() {
-    const { peer, query, windowWidth, style, peerDials } = this.props
+    const { peer, query, windowWidth, peerDials, fullWidth, style } = this.props
     const { id, filteredPeersNum, closerPeersNum, newPeersNum } = peer
     const { peerQueries } = query
     const barsWidth = windowWidth - 50
@@ -255,8 +308,13 @@ class Peer extends Component {
     let totalDuration = 0
     const dialed = peerDials[id];
 
+    let peerStyle = window.Object.assign({}, style)
+    if (fullWidth) {
+      peerStyle.width = '100%'
+    }
+
     return (
-      <div className="chartRow hoverable" style={style}>
+      <div className="chartRow hoverable" style={peerStyle}>
         <div className="chartLabel" data-tip={label}>{label}</div>
         <div className="chartMiniColumn">
           {peer.duplicate && (
@@ -289,7 +347,7 @@ class Peer extends Component {
         </div>
         <div className="chartBars" style={{ width: windowWidth }}>
           {peer.actions.map((action, key) => {
-            const style = actionBarStyle(action, query, barsWidth)
+            let style = actionBarStyle(action, query, barsWidth)
             if (style.marginRight < smallestRightMargin) {
               smallestRightMargin = style.marginRight || 0
             }

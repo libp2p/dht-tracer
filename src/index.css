@@ -151,10 +151,7 @@ code {
   margin-bottom: 0;
 }
 
-.tracer button.queryId {
-  width: 375px;
-  max-width: 40%;
-
+.foundQueryKey {
   text-transform: none;
   white-space: nowrap;
   overflow: hidden;
@@ -216,7 +213,7 @@ code {
   display: flex;
   flex: 1;
   flex-direction: row;
-  justify-content: space-around;
+  justify-content: space-between;
 }
 
 .nightMode {
@@ -251,10 +248,37 @@ code {
   color: black;
 }
 
+.color-white{
+  color: white;
+}
+
 .list > div {
   transform: translate3d(0,0,0); /* note: force GPU acceleration */
 }
 
 .pointer {
   cursor: pointer;
+}
+
+.skinny {
+  padding: '5px';
+}
+
+.foundQueryIcon {
+  padding: 5px !important;
+
+  text-align: center !important;
+  vertical-align: middle !important;
+
+  font-size: 18px !important;
+}
+
+.foundQueriesWrapper {
+  padding-left: 10px;
+}
+
+.nightModeWrapper {
+  padding-right: 10px;
+  align-items: center;
+  display: flex;
 }
