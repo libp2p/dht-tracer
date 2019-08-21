@@ -386,17 +386,15 @@ class App extends Component {
   checkPeers(prevState) {
     const prevData = prevState.data
     const curData = this.state.data
-    if (!prevData && curData) {
+    if (!prevData && curData)
       return true
-    }
     if (!prevData && !curData)
       return false
 
     const prevQuery = prevData.queries[this.state.queryId]
     const curQuery = curData.queries[this.state.queryId]
-    if (!prevQuery && curQuery) {
+    if (!prevQuery && curQuery)
       return true
-    }
     if (!prevQuery && !curQuery)
       return false
 
@@ -411,15 +409,7 @@ class App extends Component {
       this.checkQueryLengthsAndSetActive(prevState)
 
     let shouldUpdateVisiblePeers = false
-
-    // note: sorting for visible peers...
-    if (prevState.sortKey !== this.state.sortKey
-      || prevState.sortAsc !== this.state.sortAsc)
-      shouldUpdateVisiblePeers = true
-
-    // note: check peers for visible peers...
-    if (!shouldUpdateVisiblePeers)
-      shouldUpdateVisiblePeers = this.checkPeers(prevState)
+    shouldUpdateVisiblePeers = this.checkPeers(prevState)
 
     if (!shouldUpdateVisiblePeers && prevState.completedFilters !== this.state.completedFilters)
       shouldUpdateVisiblePeers = true

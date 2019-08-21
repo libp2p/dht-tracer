@@ -130,7 +130,7 @@ class Query extends Component {
       }
 
       if (peerIdx === -1)
-        return
+        return <></>
 
       return (
         <Peer
@@ -259,7 +259,7 @@ class Query extends Component {
                 }
 
                 if (peerIdx === -1)
-                  return
+                  return <></>
 
                 return (
                   <Peer
