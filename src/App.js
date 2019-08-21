@@ -5,12 +5,12 @@ import canvasToBlob from 'async-canvas-to-blob'
 import { saveAs } from 'file-saver'
 import { debounce } from 'lodash'
 
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCheckCircle, faMoon, faDownload, faCamera } from '@fortawesome/free-solid-svg-icons'
 import './App.css'
 import { Chart } from './Components/Chart'
-import { ErrorMessage } from './Components/ErrorMessage'
+import ErrorMessage from './Components/ErrorMessage'
 import { EventLogParser } from './Services/EventLogParser'
+import Header from './Components/Header'
+import StartMenu from './Components/StartMenu'
 
 let fileReader
 const windowWidth = window.innerWidth - 300
@@ -217,7 +217,7 @@ class App extends Component {
     }
   }
 
-  screenshot = debounce((queryId) => {
+  saveScreenshot = debounce((queryId) => {
     const renderFullList = !this.state.renderFullList
     this.setState({
       renderFullList,
@@ -243,7 +243,7 @@ class App extends Component {
     })
   }, 5000, { leading: true })
 
-  saveLog = (queryId) => {
+  saveLog = debounce((queryId) => {
     const { rawData } = this.state
     if (!rawData) {
       alert('no data')
@@ -264,7 +264,7 @@ class App extends Component {
     document.body.appendChild(downloadAnchorNode) // required for firefox
     downloadAnchorNode.click()
     downloadAnchorNode.remove()
-  }
+  }, 5000, { leading: true })
 
   setSortKey = (sortKey) => {
     if (sortKey.toLowerCase() === this.state.sortKey.toLowerCase()) {
@@ -273,7 +273,7 @@ class App extends Component {
         sortAsc,
       })
 
-      this.updateVisiblePeers()
+      this.updateVisiblePeerIds()
       return
     }
 
@@ -281,10 +281,10 @@ class App extends Component {
       sortKey,
       sortAsc: true,
     })
-    this.updateVisiblePeers()
+    this.updateVisiblePeerIds()
   }
 
-  updateVisiblePeers() {
+  updateVisiblePeerIds() {
     if (!this.state.data || !this.state.data.queries)
       return
 
@@ -408,14 +408,14 @@ class App extends Component {
     if (this.state.recentlySentQuery)
       this.checkQueryLengthsAndSetActive(prevState)
 
-    let shouldUpdateVisiblePeers = false
-    shouldUpdateVisiblePeers = this.checkPeers(prevState)
+    let shouldUpdateVisiblePeerIds = false
+    shouldUpdateVisiblePeerIds = this.checkPeers(prevState)
 
-    if (!shouldUpdateVisiblePeers && prevState.completedFilters !== this.state.completedFilters)
-      shouldUpdateVisiblePeers = true
+    if (!shouldUpdateVisiblePeerIds && prevState.completedFilters !== this.state.completedFilters)
+      shouldUpdateVisiblePeerIds = true
 
-    if (shouldUpdateVisiblePeers)
-      this.updateVisiblePeers()
+    if (shouldUpdateVisiblePeerIds)
+      this.updateVisiblePeerIds()
   }
 
   render() {
@@ -432,7 +432,6 @@ class App extends Component {
       commandArgExplanation,
       ranQuery,
       queryError,
-      //sendingQuery,
     } = this.state
 
     if (data && data.queries && !queryId) {
@@ -442,167 +441,38 @@ class App extends Component {
     return (
       <div className="tracer">
         <div className="flex-row">
-          <div className="foundQueriesWrapper">
-            {data && queryId &&
-              <table className="uk-table uk-table-divider">
-                <caption style={{ fontWeight: 'bold' }}>Queries Found</caption>
-                <tbody style={{ maxHeight: '150px', overflow: 'auto', display: 'block' }}>
-                  {Object.keys(data.queries).map((key) => (
-                    <tr
-                      className={`queryId ${queryId === key && 'selected'}`}
-                      key={key}
-                    >
-                      <td className="foundQueryIcon">
-                      {key === queryId && (
-                        <FontAwesomeIcon
-                          icon={faCheckCircle}
-                          style={{ color: '#7DC24B' }}
-                          data-tip="currently selected query"
-                        />
-                      )}
-                      </td>
-                      <td className="foundQueryIcon">
-                        {key === queryId && (
-                          <FontAwesomeIcon
-                            icon={faDownload}
-                            style={{ color: '#7DC24B' }}
-                            data-tip="save as text file"
-                            onClick={(e) => {e.stopPropagation(); this.saveLog(key)}}
-                          />
-                        )}
-                      </td>
-                      <td className="foundQueryIcon">
-                        {key === queryId && (
-                          <FontAwesomeIcon
-                            icon={faCamera}
-                            style={{ color: '#7DC24B' }}
-                            data-tip="save as png"
-                            onClick={(e) => {e.stopPropagation(); this.screenshot(key)}}
-                          />
-                        )}
-                      </td>
-                      <td 
-                        className="skinny"
-                        data-tip={key}
-                        onClick={() => this.changeQueryFilter(key)}
-                        style={{ cursor: 'pointer', maxWidth: '250px' }}
-                      >
-                        <div className="foundQueryKey">{key}</div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            }
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}><h4 style={{ marginBottom: '0px' }} className="text-center padding">DHT Tracer </h4></div>
-          <div onClick={this.toggleDarkMode} className="nightModeWrapper">
-            <FontAwesomeIcon icon={faMoon} className="nightMode" />
-          </div>
+          <Header
+            data={data}
+            queryId={queryId}
+            saveLog={this.saveLog}
+            saveScreenshot={this.saveScreenshot}
+            changeQueryFilter={this.changeQueryFilter}
+            toggleDarkMode={this.toggleDarkMode}
+          />
         </div>
 
-        {fileReadError && (
-          <ErrorMessage>
-            <div>
-              Sorry, your log file seems to be improperly formatted. Please make
-              sure there isn't any extra info in your log file and your log
-              entries are formatted like the below examples:{' '}
-            </div>
-            <code>{`data: {"QueryRunner":{"CurrTime":"2019-07-24T18:26:20.321273-07:00","EndTime":"0001-01-01T00:00:00Z","PeersDialQueueLen":0,"PeersDialed":null,"PeersDialedNew":[],"PeersQueried":[],"PeersRemainingLen":0,"PeersSeen":[],"PeersToQueryLen":0,"Query":{"Concurrency":0,"Key":"/provider/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ","Type":""},"RateLimit":{"Capacity":3,"Length":0},"Result":{"CloserPeers":null,"FinalSet":null,"FoundPeer":"","QueriedSet":null,"Success":false},"StartTime":"2019-07-24T18:26:20.321265-07:00"},"event":"dhtQueryRunner.Run.Start","system":"dht","time":"2019-07-25T01:26:20.321328Z"}\n\ndata: {"Hops":0,"QueryRunner":{"CurrTime":"2019-07-24T18:26:20.321372-07:00","EndTime":"0001-01-01T00:00:00Z","PeersDialQueueLen":0,"PeersDialed":null,"PeersDialedNew":[],"PeersQueried":[],"PeersRemainingLen":0,"PeersSeen":["QmU74uDuMSgouK61ND71bjaYxTJme7iUxAqzp6RygtzQb3"],"PeersToQueryLen":0,"Query":{"Concurrency":0,"Key":"/provider/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ","Type":""},"RateLimit":{"Capacity":3,"Length":3},"Result":{"CloserPeers":null,"FinalSet":null,"FoundPeer":"","QueriedSet":null,"Success":false},"StartTime":"2019-07-24T18:26:20.321265-07:00"},"XOR":12,"event":"dhtQueryRunner.addPeerToQuery","peerID":"QmU74uDuMSgouK61ND71bjaYxTJme7iUxAqzp6RygtzQb3","system":"dht","time":"2019-07-25T01:26:20.321409Z"}`}</code>
-          </ErrorMessage>
-        )}
-        {streamingError && (
-          <ErrorMessage>
-            <div>
-              Sorry, there is a problem connecting to the event stream. Please
-              check that your connection is open and you are pointing to the
-              right endpoint.
-            </div>
-          </ErrorMessage>
-        )}
-        <div className="startOptions">
-          {!data && (
-            <div className="row" style={{ alignItems: 'center' }}>
-              <div className="row center" style={{ margin: '0px' }}>
-                <label htmlFor="file-upload" className="customFileUpload">
-                  CHOOSE FILE
-                </label>
-                <input
-                  type="file"
-                  id="file-upload"
-                  className="inputfile"
-                  onChange={(e) => this.handleFileChosen(e.target.files[0])}
-                />
-              </div>
+        <ErrorMessage
+          fileReader={fileReader}
+          streamingError={streamingError}
+        />
 
-              <span style={{ padding: '0px 15px' }}> - or - </span>
-
-              <div className="inputRow" style={{ margin: '0px' }}>
-                <div className="mainInput">
-                  <input
-                    disabled={readingStream}
-                    type="text"
-                    value={loggingEndpoint}
-                    onChange={this.changeLoggingEndpoint}
-                  />
-                </div>
-                <button onClick={this.readStream} disabled={readingStream}>
-                  {readingStream
-                    ? 'Reading from stream at localhost:7000/events'
-                    : 'Read from stream'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {(readingStream || !data) && (
-            <div className="inputRow">
-              <div className="selectInput">
-                <select value={command} onChange={this.changeCommand}>
-                  <option value="" disabled hidden>
-                    Choose command
-                  </option>
-                  <option value="put-value">put-value</option>
-                  <option value="get-value">get-value</option>
-                  <option value="add-provider">add-provider</option>
-                  <option value="get-providers">get-providers</option>
-                  <option value="find-peer">find-peer</option>
-                  <option value="ping">ping</option>
-                  <option value="reset">reset</option>
-                  <option value="exit">exit</option>
-                </select>
-              </div>
-              <div className="mainInput">
-                <input
-                  type="text"
-                  value={commandArgs}
-                  onChange={this.changeCommandArgs}
-                  placeholder={commandArgExplanation}
-                  onKeyDown={(event) => {if(event.keyCode === 13) this.query();}}
-                />
-              </div>
-              <button onClick={this.query}>
-                Query
-              </button>
-            </div>
-          )}
-          {!readingStream && ranQuery && (
-            <ErrorMessage warning>
-              <div>
-                If you run queries here without first reading from the event
-                logs, you won't see them visualized here.
-              </div>
-            </ErrorMessage>
-          )}
-          {queryError && (
-            <ErrorMessage>
-              <div>
-                There was an error running your query, please check that your
-                arguments are formatted properly.
-              </div>
-            </ErrorMessage>
-          )}
-        </div>
+        <StartMenu
+          data={data}
+          readingStream={readingStream}
+          loggingEndpoint={loggingEndpoint}
+          command={command}
+          commandArgs={commandArgs}
+          commandArgExplanation={commandArgExplanation}
+          queryError={queryError}
+          fileReadError={fileReadError}
+          ranQuery={ranQuery}
+          changeLoggingEndpoint={this.changeLoggingEndpoint}
+          handleFileChosen={this.handleFileChosen}
+          readStream={this.readStream}
+          changeCommand={this.changeCommand}
+          changeCommandArgs={this.changeCommandArgs}
+          query={this.query}
+        />
 
         <div className={'my-pretty-chart-container'}>
           {data && queryId && (

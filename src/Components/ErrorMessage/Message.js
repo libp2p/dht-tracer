@@ -5,7 +5,7 @@ import {
   faQuestionCircle,
 } from '@fortawesome/free-solid-svg-icons'
 
-export const ErrorMessage = ({ children, warning }) => (
+export const Message = ({ children, warning }) => (
   <div className="errorMessage">
     <div>
       {!warning && (
