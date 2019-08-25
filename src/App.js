@@ -42,7 +42,8 @@ class App extends Component {
   rawFileContent = {}
 
   readFromUrl = async () => {
-    const traceId = window.location.pathname
+    const traceId = window.location.hash.replace('#', '')
+    console.log('TraceID:', traceId)
     if (traceId) {
       try {
         this.setState({loading: true})
