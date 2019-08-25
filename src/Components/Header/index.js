@@ -16,13 +16,14 @@ class Header extends Component {
 
     return (
       <>
-        <FoundQueries
+        {false && <FoundQueries
           data={data}
           queryId={queryId}
           saveLog={saveLog}
           saveScreenshot={saveScreenshot}
           changeQueryFilter={changeQueryFilter}
         />
+        }
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}><h4 style={{ marginBottom: '0px' }} className="text-center padding">DHT Tracer </h4></div>
         <div onClick={toggleDarkMode} className="nightModeWrapper">
           <FontAwesomeIcon icon={faMoon} className="nightMode" />

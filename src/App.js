@@ -41,6 +41,28 @@ class App extends Component {
   formattedArray = []
   rawFileContent = {}
 
+  readFromUrl = async () => {
+    const traceId = window.location.pathname
+    if (traceId) {
+      try {
+        this.setState({loading: true})
+        const host = 'dht-test-entries-svuagpbosa-uc.a.run.app/'
+        const base = `https://${host}/vis-data/`
+        const res = await fetch(`${base}${traceId}`)
+        const content = await res.text()
+        this.formattedArray = EventLogParser.parseFileContent(content)
+        this.identifyFirstQuery()
+        this.filterData()
+        this.setState({loading: false})
+      } catch (e) {
+        this.setState({loading: false})
+        this.setState({loadError: true})
+        console.error('Exception', e)
+      }
+
+    }
+  }
+
   readStream = () => {
     this.setState({ readingStream: true, streamingError: false })
     const { loggingEndpoint } = this.state
@@ -404,6 +426,10 @@ class App extends Component {
     return false
   }
 
+  componentDidMount() {
+    this.readFromUrl()
+  }
+
   componentDidUpdate(prevProps, prevState) {
     if (this.state.recentlySentQuery)
       this.checkQueryLengthsAndSetActive(prevState)
@@ -432,6 +458,8 @@ class App extends Component {
       commandArgExplanation,
       ranQuery,
       queryError,
+      loading,
+      loadError,
     } = this.state
 
     if (data && data.queries && !queryId) {
@@ -451,12 +479,15 @@ class App extends Component {
           />
         </div>
 
+        {loading && <div>Loading...</div>}
+        {loadError && <div>Load Error</div>}
+
         <ErrorMessage
           fileReader={fileReader}
           streamingError={streamingError}
         />
 
-        <StartMenu
+        {false && <StartMenu
           data={data}
           readingStream={readingStream}
           loggingEndpoint={loggingEndpoint}
@@ -472,7 +503,7 @@ class App extends Component {
           changeCommand={this.changeCommand}
           changeCommandArgs={this.changeCommandArgs}
           query={this.query}
-        />
+        />}
 
         <div className={'my-pretty-chart-container'}>
           {data && queryId && (
