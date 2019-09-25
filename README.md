@@ -1,3 +1,7 @@
+# libp2p DHT tracer webapp
+
+![screenshot](img/dht-tracer-screenshot.png?raw=true)
+
 #### Running this app
 
 Install dependencies
